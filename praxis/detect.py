@@ -270,4 +270,3 @@ if __name__ == "__main__":
     print(f"Dependencies: {result.dependencies}")
     print(f"Frameworks: {result.frameworks}")
 
-# Made with Bob

@@ -163,7 +163,7 @@ def generate(prompt: str, max_tokens: int = 500) -> str:
         error_body = ""
         try:
             error_body = resp.text
-        except:
+        except Exception:
             pass
         raise requests.HTTPError(
             f"Granite API request failed: {e}\nResponse body: {error_body}"
@@ -182,4 +182,3 @@ if __name__ == "__main__":
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)
 
-# Made with Bob

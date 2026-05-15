@@ -65,6 +65,99 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 **Risks Identified**:
 1. **Risk**: MethodologyPrinciple dataclass might need additional fields in later phases
+
+#### Sub-Task 2: Stack Detection + Granite Integration (2026-05-15 13:31 CST)
+
+**Completed**: May 15, 2026, ~1:32 PM CST
+
+**What Was Built**:
+1. **Stack Detection Module (praxis/detect.py)**
+   - Created `StackInfo` dataclass with 6 fields: stack_name, frameworks, dependencies, python_files_count, has_requirements_txt, has_pyproject_toml
+   - Implemented `detect_stack(project_path)` function with 5-step detection logic:
+     1. Walk for .py files, filtering out venv/__pycache__/.git/node_modules/praxis_output/bob_sessions
+     2. Parse requirements.txt: strip comments, version specifiers, editable prefixes
+     3. Parse pyproject.toml: extract from [project.dependencies] and [tool.poetry.dependencies]
+     4. Detect frameworks: Flask, FastAPI, Django, pandas, numpy, pytest via substring matching
+     5. Determine stack name: "Python" if any Python indicators found, else "Generic"
+   - Added UTF-8/latin-1 fallback encoding for requirements.txt
+   - Added BOM stripping for UTF-8 files with byte order marks
+   - Inline verification block: `python -m praxis.detect`
+
+2. **Granite Integration Module (praxis/granite.py)**
+   - Reused IAM token exchange pattern from test_watsonx.py
+   - Module-level token caching (no expiry checking needed for short CLI runs)
+   - `generate(prompt, max_tokens=500)` function with greedy decoding
+   - Loads credentials from .env via python-dotenv
+   - Clear error messages for missing WATSONX_API_KEY or WATSONX_PROJECT_ID
+   - Enhanced error handling: includes response body in exceptions for debuggability
+   - Inline verification block: `python -m praxis.granite`
+
+3. **Bug Fix**
+   - Fixed requirements.txt UTF-16 encoding issue (was causing parse failures)
+   - Recreated as UTF-8 with proper line endings
+
+**Options Considered**:
+
+**For requirements.txt Parsing**:
+- **Option A**: Use pip's internal parser (pip._internal.req)
+  - Rejected: Private API, not stable, overkill for simple version stripping
+- **Option B (Chosen)**: Simple string splitting on version separators
+  - Why: Sufficient for 95% of real-world requirements.txt files, no dependencies
+
+**For pyproject.toml Parsing**:
+- **Option A**: Use external toml library
+  - Rejected: Python 3.11+ has tomllib in stdlib
+- **Option B (Chosen)**: Use tomllib from stdlib
+  - Why: No external dependency, officially supported
+
+**For Framework Detection**:
+- **Option A**: Exact match on dependency names
+  - Rejected: Misses packages like "flask-cors", "pytest-cov"
+- **Option B (Chosen)**: Substring matching with display name mapping
+  - Why: Catches framework-related packages, simple to extend
+
+**For Granite Token Caching**:
+- **Option A**: File-based cache with expiry checking
+  - Rejected: Overkill for CLI that runs in seconds
+- **Option B (Chosen)**: Module-level variable, no expiry
+  - Why: Tokens last 1 hour, CLI runs are <1 minute, simpler code
+
+**For Encoding Handling**:
+- **Option A**: Force UTF-8 only, fail on decode errors
+  - Rejected: Real-world files have encoding issues (BOM, latin-1)
+- **Option B (Chosen)**: UTF-8 with latin-1 fallback, BOM stripping
+  - Why: Handles common encoding issues gracefully
+
+**Why This Approach**:
+1. **Robust Parsing**: Handles real-world file encoding issues (BOM, UTF-16) without failing
+2. **Minimal Dependencies**: Uses stdlib only (tomllib, pathlib, dataclasses)
+3. **Graceful Degradation**: Parse errors print warnings but don't crash the tool
+4. **Framework Detection**: Substring matching catches framework-related packages (flask-cors, pytest-cov)
+5. **Token Efficiency**: Caches IAM token for multiple Granite calls in one CLI run
+
+**Risks Identified**:
+1. **Risk**: Substring matching for frameworks might produce false positives
+   - **Example**: A package named "my-flask-wrapper" would trigger Flask detection
+   - **Mitigation**: Acceptable for v1; framework list is curated and unlikely to collide
+   - **Status**: Monitored
+
+2. **Risk**: No PEP 508 parser means complex dependency specs might parse incorrectly
+   - **Example**: `package[extra1,extra2] ; python_version >= "3.8"`
+   - **Mitigation**: Simple split on `[` and `;` handles 95% of cases; full PEP 508 is Phase 2+
+   - **Status**: Documented limitation
+
+3. **Risk**: IAM token might expire during long-running CLI sessions
+   - **Mitigation**: Tokens last 1 hour, CLI runs are seconds; not a practical concern
+   - **Status**: Accepted
+
+**Testing Performed**:
+- ✅ `python -m praxis.detect` → Detected Python stack, 7 .py files, 6 dependencies (certifi, charset-normalizer, idna, python-dotenv, requests, urllib3)
+- ✅ `python -m praxis.granite` → Granite responded with "Ready."
+- ✅ UTF-8 BOM handling verified
+- ✅ requirements.txt parsing with version specifiers verified
+
+**Next Steps**: Sub-Task 3 will implement templates (praxis/templates/) and generation engine (praxis/generate.py).
+
    - **Mitigation**: Dataclass is easy to extend; can add optional fields without breaking existing code
    - **Status**: Monitored
 

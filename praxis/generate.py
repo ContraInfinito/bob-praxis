@@ -5,8 +5,8 @@ Assembles templates with detected stack information and Granite-generated
 content to produce tailored Bob IDE configuration files.
 """
 
-from datetime import datetime
 from pathlib import Path
+from datetime import datetime, timezone
 
 from praxis.detect import StackInfo
 from praxis.granite import generate as granite_generate
@@ -120,6 +120,37 @@ def _generate_framework_notes(frameworks: list[str]) -> str:
     
     return "\n".join(notes) if notes else "No specific framework guidance available."
 
+def _read_project_readme(project_path: Path, max_chars: int = 1500) -> str:
+    """
+    Read the project's README.md if it exists, returning a truncated excerpt.
+    
+    Provides grounding context for Granite prose generation so the model
+    doesn't hallucinate the project's purpose from the name alone.
+    
+    Args:
+        project_path: Path to the project directory
+        max_chars: Maximum characters to return (default: 1500)
+        
+    Returns:
+        Truncated README content, or empty string if no README found
+    """
+    # Try common README filenames in order of preference
+    for readme_name in ("README.md", "README.rst", "README.txt", "README"):
+        readme_path = project_path / readme_name
+        if readme_path.exists() and readme_path.is_file():
+            try:
+                with open(readme_path, "r", encoding="utf-8") as f:
+                    content = f.read()
+                # Strip BOM if present, truncate to max_chars
+                content = content.lstrip('\ufeff').strip()
+                if len(content) > max_chars:
+                    content = content[:max_chars] + "..."
+                return content
+            except (OSError, UnicodeDecodeError):
+                continue
+    
+    return ""
+
 
 def generate_outputs(project_path: Path, stack_info: StackInfo) -> list[Path]:
     """
@@ -169,7 +200,7 @@ def generate_outputs(project_path: Path, stack_info: StackInfo) -> list[Path]:
     
     # Prepare common placeholders
     project_name = project_path.name
-    generation_date = datetime.utcnow().strftime("%Y-%m-%d")
+    generation_date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     frameworks_list = _format_frameworks_list(stack_info.frameworks)
     dependencies_list = _format_dependencies_list(stack_info.dependencies)
     
@@ -181,24 +212,52 @@ def generate_outputs(project_path: Path, stack_info: StackInfo) -> list[Path]:
     # Generate framework-specific notes
     framework_notes = _generate_framework_notes(stack_info.frameworks)
     
+    # Read README for grounding context (prevents Granite hallucination)
+    readme_excerpt = _read_project_readme(project_path)
+    if readme_excerpt:
+        readme_context = (
+            f"\n\nProject README excerpt (use this as ground truth about what the "
+            f"project actually does — do not invent a different purpose):\n"
+            f"---\n{readme_excerpt}\n---"
+        )
+    else:
+        readme_context = (
+            f"\n\nNo README found. Describe the project conservatively based only on "
+            f"its name, stack, and dependencies. Do not invent a purpose."
+        )
+    
+    # Shared tone constraint for all prose-generation prompts
+    tone_rules = (
+        "Tone rules: plain, direct prose. No corporate language. Do not use phrases "
+        "like 'embark on', 'forge a partnership', 'shape the future', 'exceed "
+        "expectations', 'ambitious endeavor', 'cutting-edge', 'leveraging', "
+        "'pioneering'. Sound like a competent engineer briefing a coworker, not a "
+        "CEO opening a keynote."
+    )
+    
     # Make Granite calls for content generation
     print("  Calling Granite for PRAXIS_CONTRACT.md introduction...")
     granite_intro_prompt = (
-        f"Write a 2-3 paragraph introduction for a project collaboration contract. "
-        f"The project is named '{project_name}'. It uses {stack_info.stack_name} as its tech stack. "
-        f"Detected frameworks: {frameworks_list}. Detected dependencies: {dependencies_list}. "
-        f"The introduction should be written in second person addressing 'Bob' (an AI development partner), "
-        f"explaining how Bob will collaborate with the developer on this specific project. "
-        f"Mention the detected frameworks by name. Keep it professional, not flowery. "
-        f"Output just the introduction prose, no headers, no meta-commentary."
+        f"Write 2 short paragraphs (4-5 sentences total) introducing how Bob (an AI "
+        f"development partner) will work on the '{project_name}' project. "
+        f"Stack: {stack_info.stack_name}. Detected frameworks: {frameworks_list}. "
+        f"Detected dependencies: {dependencies_list}.\n\n"
+        f"Address Bob in second person. Mention the detected frameworks or "
+        f"dependencies concretely. Focus on what Bob's collaboration will involve "
+        f"day-to-day, not abstract goals.\n\n"
+        f"{tone_rules}"
+        f"{readme_context}\n\n"
+        f"Output only the prose. No headers, no meta-commentary, no 'Dear Bob' "
+        f"salutation, no signature."
     )
     granite_intro_prose = granite_generate(granite_intro_prompt, max_tokens=300)
     
     print("  Calling Granite for python_skill.md best practices...")
     granite_skill_prompt = (
-        f"Write Python development best practices tailored to a project using these frameworks: {frameworks_list}. "
-        f"Detected dependencies: {dependencies_list}. "
-        f"Output 5-8 bullet points covering Python-specific conventions relevant to this exact dependency set. "
+        f"Write Python development best practices tailored to a project using these "
+        f"frameworks: {frameworks_list}. Detected dependencies: {dependencies_list}. "
+        f"Output 5-8 bullet points covering Python-specific conventions relevant to "
+        f"this exact dependency set. "
         f"If pytest is detected, include a bullet about test conventions. "
         f"If Flask or FastAPI is detected, include a bullet about web framework patterns. "
         f"If pandas/numpy is detected, include a bullet about data handling. "
@@ -208,10 +267,15 @@ def generate_outputs(project_path: Path, stack_info: StackInfo) -> list[Path]:
     
     print("  Calling Granite for AGENTS.md project context...")
     granite_agents_prompt = (
-        f"Write a brief 2-3 sentence project description for a project named '{project_name}'. "
-        f"It is a {stack_info.stack_name} project. Detected frameworks: {frameworks_list}. "
-        f"The description should help an AI development partner understand the project's nature at a glance. "
-        f"Output ONLY the description, no headers or meta-commentary."
+        f"Write a brief 2-3 sentence factual description of the '{project_name}' "
+        f"project for an AI development partner to read at session start. "
+        f"Stack: {stack_info.stack_name}. Detected frameworks: {frameworks_list}.\n\n"
+        f"The description should answer: what does this project do? Be specific and "
+        f"factual. If you don't know what the project does, say so plainly instead "
+        f"of inventing a purpose.\n\n"
+        f"{tone_rules}"
+        f"{readme_context}\n\n"
+        f"Output ONLY the description prose, no headers or meta-commentary."
     )
     granite_agents_context = granite_generate(granite_agents_prompt, max_tokens=150)
     
@@ -245,4 +309,3 @@ def generate_outputs(project_path: Path, stack_info: StackInfo) -> list[Path]:
     
     return output_paths
 
-# Made with Bob

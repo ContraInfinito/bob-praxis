@@ -29,14 +29,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
    - Ensures open-source compliance for hackathon submission
 
 4. **Documentation Foundation**
-   - Created comprehensive README.md (189 lines)
-     - Project description and purpose
-     - Installation instructions
-     - Usage examples for both input modes (analyze and plan)
-     - Project structure overview
-     - Development status and roadmap
-   - Created bob_sessions/README.md to document development process
-   - Initialized this CHANGELOG.md for version tracking
+   - Created README.md describing Praxis as a methodology transfer tool for IBM Bob IDE
+   - Note: README was re-aligned mid-Phase-0 after detecting drift toward a generic "AI project planner" framing. Corrected version describes the actual methodology-transfer architecture.
 
 5. **Token Tracking**
    - Created BOBCOIN_LOG.md to track AI token consumption per phase
@@ -110,6 +104,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Impact**: Could exhaust Bobcoin budget before completing hackathon
 - **Mitigation**: BOBCOIN_LOG.md tracks consumption per phase, allows budget adjustments
 - **Status**: Tracked
+
+#### Phase 0 Drift Correction (post-commit)
+
+After the initial Phase 0 commit (`70ac06b`), an audit revealed that README.md, BOBCOIN_LOG.md, and the CHANGELOG's Phase 1 sketch had drifted from the project brief — describing a generic AI project planning tool rather than the methodology transfer tool we're actually building. Corrections applied:
+
+- **README.md**: Rewritten to describe Praxis as a Bob IDE methodology transfer tool with the correct architecture (hybrid CLI + custom mode), correct outputs (AGENTS.md, PRAXIS_CONTRACT.md, skill files, .bobignore, custom mode), and the 7 methodology principles. Removed incorrect attribution to Cline; added correct attribution to IBM Bob, watsonx.ai, and Claude (second-agent reviewer).
+- **.gitignore**: Replaced the overly-broad `PRAXIS_CONTRACT.md` rule with `**/praxis_output/` so generated outputs are ignored at any path without blocking example files.
+- **BOBCOIN_LOG.md**: Replaced dollar-formatted estimates with Bobcoin numbers. Set correct 40-coin total budget, 15-coin demo reserve. Phase plan rewritten to match the agreed roadmap.
+- **CHANGELOG.md**: This section + corrected Phase 1 plan below.
+
+Lesson logged: documentation artifacts are vulnerable to model drift when the brief is paraphrased rather than re-read verbatim. Future phases must re-anchor on the project brief at the start of each task, not rely on summary memory.
+
 
 #### Next Steps (Phase 1)
 

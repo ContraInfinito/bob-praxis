@@ -14,7 +14,7 @@ Tracks Bob IDE Bobcoin consumption per phase. Bobcoins are the IBM Bob hackathon
 |-------|-------------|-----------|--------|------------|-----------|-------|
 | Bootstrap | Brief restatement, risk analysis, Phase 0 planning | - | 0.29 | 0.29 | 39.71 | Pre-Phase-0 reasoning |
 | Phase 0 | Project initialization and security baseline | 2.0 | 1.10 | 1.39 | 38.61 | File creation, README, LICENSE, gitignore, requirements.txt, bob_sessions setup |
-| Phase 1 | CLI skeleton + Python stack support | 6-10 | TBD | TBD | TBD | praxis package, detect.py, granite.py, generate.py, templates, sample Python project |
+| Phase 1 | CLI skeleton + Python stack support | 6-10 | 6.48 | 7.87 | 32.13 | praxis package, detect.py, granite.py, generate.py, templates, sample Python project - COMPLETE |
 | Phase 2 | Planning-doc mode + Unity stack | 5-8 | TBD | TBD | TBD | praxis plan command, Unity detector, Granite-based planning-doc interpretation |
 | Phase 3 | Bob custom mode wrapper | 3-5 | TBD | TBD | TBD | Custom mode .md file, CLI integration via Bob |
 | Phase 4 | Demo, docs, submission | 1-2 (Bob) + 15 (demo) | TBD | TBD | TBD | README polish, demo video, submission upload |

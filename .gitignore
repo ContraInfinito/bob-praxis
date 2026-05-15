@@ -1,4 +1,32 @@
-.env 
-venv/ 
-__pycache__/ 
-output.txt 
+# Environment and credentials
+.env
+
+# Virtual environment
+venv/
+
+# Python bytecode
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Output files
+output.txt
+PRAXIS_CONTRACT.md
+
+# Bob session screenshots (keep markdown exports, ignore images)
+bob_sessions/*.png
+bob_sessions/*.jpg
+bob_sessions/*.jpeg
+bob_sessions/*.gif

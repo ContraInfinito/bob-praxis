@@ -158,4 +158,4 @@ def get_principle_by_name(name: str) -> MethodologyPrinciple | None:
             return principle
     return None
 
-# Made with Bob
+

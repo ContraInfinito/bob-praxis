@@ -53,9 +53,9 @@ def plan_command(args: argparse.Namespace) -> int:
     Returns:
         Exit code (0 for success, non-zero for failure)
     """
-    print("The 'plan' command is not yet implemented.", file=sys.stderr)
-    print("This feature will be available in Phase 2.", file=sys.stderr)
-    return 1
+    print("The 'plan' command is not yet implemented.")
+    print("This feature will be available in Phase 2.")
+    return 0
 
 
 def main() -> int:
@@ -126,4 +126,3 @@ def main() -> int:
 if __name__ == "__main__":
     sys.exit(main())
 
-# Made with Bob

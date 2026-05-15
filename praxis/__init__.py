@@ -8,4 +8,3 @@ files that make Bob behave consistently with that methodology on the project.
 
 __version__ = "0.1.0"
 
-# Made with Bob

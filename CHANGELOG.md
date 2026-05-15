@@ -5,6 +5,80 @@ All notable changes to the Praxis project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+### Phase 1 - CLI Skeleton + Python Stack Support (2026-05-15)
+
+**Status**: In Progress
+
+#### Sub-Task 1: Core Package Structure + CLI + Methodology Constants (2026-05-15 13:16 CST)
+
+**Completed**: May 15, 2026, ~1:18 PM CST
+
+**What Was Built**:
+1. **Package Structure**
+   - Created `praxis/__init__.py` with version metadata
+   - Created `praxis/__main__.py` as entry point for `python -m praxis`
+   
+2. **Methodology Principles System**
+   - Created `praxis/methodology.py` with `MethodologyPrinciple` dataclass
+   - Defined all 7 hardcoded methodology principles with 4 rendering formats each:
+     - `name`: Short title (e.g., "Prompt-first execution")
+     - `short_description`: One-line summary for compact contexts
+     - `full_description`: 2-3 sentence explanation for documentation
+     - `enforcement_hint`: How Bob should enforce the principle
+   - Added helper functions: `get_principles_summary()`, `get_principle_by_name()`
+   
+3. **CLI Framework**
+   - Created `praxis/cli.py` with argparse-based interface
+   - Implemented two subcommands:
+     - `analyze <path>`: Functional skeleton with path validation
+     - `plan <path>`: Stub that prints "not yet implemented"
+   - Added `--version` flag
+   - Proper error handling for non-existent paths and non-directory paths
+
+**Options Considered**:
+
+**For Methodology Principle Storage**:
+- **Option A**: Store as simple strings or tuples
+  - Rejected: Doesn't support multiple rendering formats needed for different output files
+- **Option B**: Store as dictionaries
+  - Rejected: No type safety, harder to maintain
+- **Option C (Chosen)**: Use dataclass with named fields
+  - Why: Type-safe, self-documenting, supports multiple rendering formats, easy to extend
+
+**For CLI Argument Parsing**:
+- **Option A**: Use click library
+  - Rejected: External dependency, overkill for simple two-command CLI
+- **Option B (Chosen)**: Use stdlib argparse
+  - Why: No dependencies, sufficient for our needs, widely understood
+
+**For Path Validation**:
+- **Option A**: Validate in main() before dispatching
+  - Rejected: Duplicates validation logic across commands
+- **Option B (Chosen)**: Validate in each command handler
+  - Why: Each command may have different path requirements (analyze needs dir, plan needs file)
+
+**Why This Approach**:
+1. **Dataclass Structure**: The 4-field MethodologyPrinciple design enables rendering the same principle in different contexts (short form in .bobignore comments, full form in PRAXIS_CONTRACT.md, enforcement-focused in methodology skill file) without duplicating content
+2. **Argparse Subcommands**: Standard Python pattern for multi-command CLIs; familiar to developers
+3. **Early Path Validation**: Fail fast with clear error messages before attempting stack detection
+4. **Stub Implementation**: The `plan` command stub documents the feature exists but isn't ready, preventing user confusion
+
+**Risks Identified**:
+1. **Risk**: MethodologyPrinciple dataclass might need additional fields in later phases
+   - **Mitigation**: Dataclass is easy to extend; can add optional fields without breaking existing code
+   - **Status**: Monitored
+
+2. **Risk**: CLI might need additional global flags (--verbose, --output-dir)
+   - **Mitigation**: Argparse supports global flags; can add before subparsers if needed
+   - **Status**: Deferred to Phase 2+ based on user feedback
+
+**Testing Performed**:
+- ✅ `python -m praxis analyze .` → Success (prints path, acknowledges stub)
+- ✅ `python -m praxis analyze ./nonexistent` → Error with clear message
+- ✅ `python -m praxis plan ./test.md` → Stub message printed
+
+**Next Steps**: Sub-Task 2 will implement `praxis/detect.py` (Python stack detector) and `praxis/granite.py` (watsonx.ai wrapper).
+
 ## [Unreleased]
 
 ### Phase 0 - Project Initialization and Security Baseline (2026-05-15)

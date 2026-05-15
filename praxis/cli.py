@@ -1,0 +1,129 @@
+"""
+Praxis command-line interface.
+
+Provides two subcommands:
+- analyze: Detect stack from an existing project directory
+- plan: Bootstrap from a planning document (Phase 2+)
+"""
+
+import argparse
+import sys
+from pathlib import Path
+
+
+def analyze_command(args: argparse.Namespace) -> int:
+    """
+    Handle the 'analyze' subcommand.
+    
+    Detects the stack from an existing project directory and generates
+    tailored Bob IDE configuration files.
+    
+    Args:
+        args: Parsed command-line arguments containing 'path'
+        
+    Returns:
+        Exit code (0 for success, non-zero for failure)
+    """
+    project_path = Path(args.path).resolve()
+    
+    if not project_path.exists():
+        print(f"Error: Path does not exist: {project_path}", file=sys.stderr)
+        return 1
+    
+    if not project_path.is_dir():
+        print(f"Error: Path is not a directory: {project_path}", file=sys.stderr)
+        return 1
+    
+    print(f"Analyzing project at: {project_path}")
+    print("Stack detection and generation will be implemented in Sub-Task 2-4")
+    
+    return 0
+
+
+def plan_command(args: argparse.Namespace) -> int:
+    """
+    Handle the 'plan' subcommand.
+    
+    Bootstraps Bob IDE configuration from a planning document.
+    This is a Phase 2+ feature and is currently a stub.
+    
+    Args:
+        args: Parsed command-line arguments containing 'path'
+        
+    Returns:
+        Exit code (0 for success, non-zero for failure)
+    """
+    print("The 'plan' command is not yet implemented.", file=sys.stderr)
+    print("This feature will be available in Phase 2.", file=sys.stderr)
+    return 1
+
+
+def main() -> int:
+    """
+    Main entry point for the Praxis CLI.
+    
+    Parses command-line arguments and dispatches to the appropriate subcommand.
+    
+    Returns:
+        Exit code (0 for success, non-zero for failure)
+    """
+    parser = argparse.ArgumentParser(
+        prog="praxis",
+        description="A methodology transfer tool for IBM Bob IDE",
+        epilog="For more information, see: https://github.com/ContraInfinito/bob-praxis",
+    )
+    
+    parser.add_argument(
+        "--version",
+        action="version",
+        version="%(prog)s 0.1.0",
+    )
+    
+    subparsers = parser.add_subparsers(
+        dest="command",
+        required=True,
+        help="Available commands",
+    )
+    
+    # 'analyze' subcommand
+    analyze_parser = subparsers.add_parser(
+        "analyze",
+        help="Analyze an existing project directory and generate Bob IDE configuration",
+        description=(
+            "Detects the technology stack from an existing project directory "
+            "(Python, Unity, or generic) and generates tailored Bob IDE configuration "
+            "files in <project>/praxis_output/."
+        ),
+    )
+    analyze_parser.add_argument(
+        "path",
+        type=str,
+        help="Path to the project directory to analyze",
+    )
+    analyze_parser.set_defaults(func=analyze_command)
+    
+    # 'plan' subcommand
+    plan_parser = subparsers.add_parser(
+        "plan",
+        help="Bootstrap from a planning document (Phase 2+)",
+        description=(
+            "Interprets a planning document (markdown, text, or PDF) and generates "
+            "Bob IDE configuration for a new project. This feature is not yet implemented."
+        ),
+    )
+    plan_parser.add_argument(
+        "path",
+        type=str,
+        help="Path to the planning document",
+    )
+    plan_parser.set_defaults(func=plan_command)
+    
+    # Parse arguments and dispatch
+    args = parser.parse_args()
+    return args.func(args)
+
+
+if __name__ == "__main__":
+    sys.exit(main())
+
+# Made with Bob

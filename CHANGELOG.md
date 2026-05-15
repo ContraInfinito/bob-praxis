@@ -5,6 +5,46 @@ All notable changes to the Praxis project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+### Phase 3 - Praxis Bob Custom Mode (2026-05-15)
+
+**Status**: Complete
+
+#### Sub-Task 1: Praxis Meta-Mode + Installation Instructions (2026-05-15 <time> CST)
+
+**Completed**: May 15, 2026, ~<approximate time> CST
+
+**What Was Built**:
+
+1. **praxis_mode.md (repository root)** — A global Bob custom mode that wraps the Praxis CLI. When activated, Bob detects whether the user wants to analyze a codebase or bootstrap from a planning document, runs the appropriate CLI command, reads the generated configuration, and adopts it as session context. For planning-document mode, Bob surfaces clarifying questions to the developer before treating the configuration as final.
+
+2. **README.md update** — Added "Installing the Praxis Bob Mode" section with import and usage instructions. Documents the two invocation patterns (analyze codebase, bootstrap from planning doc) and the handoff to project-specific generated modes for ongoing work.
+
+**Design Decisions**:
+
+- **Single mode rather than two**: One `praxis_mode.md` handles both analyze and plan invocation patterns based on user intent, rather than separate `praxis_analyze` and `praxis_plan` modes. Reduces user-facing complexity and reflects the unified CLI interface Phase 2 produced.
+
+- **Bootstrap-then-handoff pattern**: The Praxis meta-mode is explicitly a bootstrapper. After it generates a project-specific `custom_mode.md`, the user is directed to load that as the long-term project mode. The meta-mode is not meant to be active during ongoing project work.
+
+- **Clarifying questions are the demo moment**: Pattern 2 (plan mode) explicitly instructs Bob to present each clarifying question and wait for answers. This is the methodology principle "Prompt-first execution" enforced in the mode definition itself — Praxis enforces its own principles in its own output.
+
+**Why This Approach**:
+
+1. **Minimal viable mode**: No conversational refinement loop, no mode-level error handling beyond CLI exit codes, no advanced features. The mode delegates to the CLI for all heavy lifting and only handles invocation routing and context loading.
+
+2. **Pattern-mirroring**: Structure mirrors the per-project `custom_mode.md` Praxis itself generates (Phase 1 template), since that pattern already follows Bob's custom mode conventions.
+
+3. **Zero Bobcoin cost**: Mode file content was authored without invoking Bob; only used for the manual test of loading and activating the mode in Bob IDE.
+
+**Testing Performed**:
+
+- Manual: Load the mode into Bob IDE, activate it, issue test invocations for both patterns. Verify Bob runs the CLI and reads the generated files. Results: <to be filled in by user after test>
+
+**Next Phase**:
+
+**Phase 4** (Demo + Documentation + Submission) wraps the hackathon: demo video recording, README polish, BOBCOIN_LOG reconciliation, submission upload to lablab.ai.
+
+---
+
 ### Phase 2 - Planning-Doc Mode (2026-05-15)
 
 **Status**: In Progress

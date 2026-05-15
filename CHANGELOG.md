@@ -87,6 +87,146 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ✅ Clarifying questions: 2 relevant questions about premium features and authentication
 
 **Next Steps**: Sub-Task 2 will wire `praxis plan` into the CLI and modify generate.py to accept PlanInfo as input.
+#### Sub-Task 2: CLI Wiring + generate.py Unification (2026-05-15 15:45 CST)
+
+**Completed**: May 15, 2026, ~3:56 PM CST
+
+**What Was Built**:
+1. **GenerationContext Dataclass (praxis/generate.py)**
+   - Unified input type for both analyze and plan modes
+   - Fields from StackInfo: project_name, stack_name, frameworks, dependencies, python_files_count
+   - Fields from PlanInfo: project_purpose, features, integrations, clarifying_questions
+   - Grounding context fields: grounding_context, grounding_source_label (README vs planning doc)
+   - Mode flag: "analyze" or "plan"
+
+2. **Conversion Functions**
+   - `_stack_info_to_context(stack_info, project_path)`: Adapts StackInfo to GenerationContext
+   - `_plan_info_to_context(plan_info, doc_path)`: Adapts PlanInfo to GenerationContext
+   - Both exported in __all__ for CLI use
+
+3. **Refactored generate_outputs Function**
+   - Signature changed from `(project_path, stack_info)` to `(output_root_path, context)`
+   - Works for both project directories (analyze) and doc parent directories (plan)
+   - Granite prompts adapted to use grounding_context with mode-specific labels
+   - Plan mode adds features/integrations to Granite intro prompt
+   - Clarifying questions block generated for plan mode, inserted into AGENTS.md
+
+4. **Updated AGENTS.md Template**
+   - Added `{clarifying_questions_block}` placeholder between Session Start Checklist and Methodology Principles
+   - Displays "Open Questions for the Developer" section when plan mode has clarifying questions
+
+5. **CLI Wiring (praxis/cli.py)**
+   - Updated `analyze_command` to use `_stack_info_to_context` before calling `generate_outputs`
+   - Implemented real `plan_command` (replaced stub):
+     - Validates doc path exists and is a file
+     - Calls `parse_planning_doc` to extract PlanInfo
+     - Converts to GenerationContext via `_plan_info_to_context`
+     - Calls `generate_outputs` with doc parent directory as output root
+     - Reports clarifying questions count if present
+
+6. **Code Fence Stripping in plan.py**
+   - Added `strip_code_fences` helper to handle Granite returning ```json fences despite instructions
+   - Applied to both initial parse and retry parse
+
+**Options Considered**:
+
+**For Unification Strategy**:
+- **Option A**: Make generate_outputs accept Union[StackInfo, PlanInfo]
+  - Rejected: Requires type checking and branching throughout function
+- **Option B (Chosen)**: Introduce GenerationContext as unified type
+  - Why: Single code path, clear separation of concerns, easier to extend
+
+**For Grounding Context Handling**:
+- **Option A**: Separate Granite prompts for analyze vs plan
+  - Rejected: Code duplication, harder to maintain consistency
+- **Option B (Chosen)**: Single prompt with mode-aware grounding block
+  - Why: DRY principle, consistent tone across modes
+
+**For Clarifying Questions Display**:
+- **Option A**: Add to PRAXIS_CONTRACT.md
+  - Rejected: Contract is about methodology, not project specifics
+- **Option B (Chosen)**: Add to AGENTS.md as "Open Questions"
+  - Why: AGENTS.md is the session-start context file, natural fit
+
+**Why This Approach**:
+1. **Polymorphic Generation**: GenerationContext unifies both input types, eliminating mode-specific branching
+2. **Grounding Context**: Both modes use the same Granite prompts with mode-aware context labels
+3. **Clarifying Questions**: Surfaced in AGENTS.md where Bob reads them at session start
+4. **Code Fence Handling**: Granite sometimes ignores "no code fences" instruction; strip them defensively
+5. **Backward Compatibility**: Breaking change to generate_outputs signature is acceptable (no external callers)
+
+**Risks Identified**:
+1. **Risk**: Granite might still return "Generic" for Python planning docs
+   - **Mitigation**: Prompt explicitly lists Python keywords; test doc uses "Python" 4+ times
+#### Sub-Task 3: Sample Planning Doc + Ship-Gate Verification (2026-05-15 16:58 CST)
+
+**Completed**: May 15, 2026, ~5:00 PM CST
+
+**What Was Built**:
+1. **tests/sample_planning_doc.md** — Realistic planning document for a Habit Tracker API (Python + Flask + pytest, ~600 words, 3 integrations, intentional gaps for clarifying questions)
+
+**Ship-Gate Verification Results**:
+- ✓ Stack inferred as: Python
+- ✓ Frameworks detected: Flask, SQLAlchemy, pytest, marshmallow
+- ✓ PRAXIS_CONTRACT.md intro mentions Flask and pytest by name (also SQLAlchemy, Alembic, marshmallow, Sentry)
+- ✓ AGENTS.md has Open Questions section with 5 clarifying questions
+- ✓ AGENTS.md describes the Habit Tracker API specifically (mentions habit tracking, multi-user, REST API, streak data)
+- ✓ All 7 methodology principles render in PRAXIS_CONTRACT.md
+- ✓ Granite artifacts observed: One minor artifact - instruction echo prefix "The exact response must be a single, coherent text block:" in AGENTS.md project description. Does not impact usability.
+
+**Granite Output Quality**: Good. Intro paragraphs are specific and mention all detected frameworks. Clarifying questions are relevant (timezone handling, pagination, security requirements, error logging strategy, additional auth methods). Minor instruction echo in AGENTS.md is a known limitation from the sanitizer polish pass.
+
+---
+
+### Phase 2 Complete (2026-05-15)
+
+**Completion Time**: May 15, 2026, ~5:00 PM CST  
+**Total Phase Duration**: ~4.5 hours (12:30 PM - 5:00 PM CST)  
+**Bobcoin Consumption**: Sub-Task 1: 2, Sub-Task 2: 3, Polish: 5, Sub-Task 3: 1.5 = 11.5 Bobcoins
+
+#### Phase 2 Summary
+
+Phase 2 delivered planning-document mode. The `praxis plan <doc>` command parses a planning document via Granite structured-JSON inference, generates a unified GenerationContext, and produces the same 6 Bob IDE configuration files that analyze mode produces. The clarifying-questions feature surfaces real ambiguities from the planning document in the generated AGENTS.md, enabling Bob to ask the developer about unresolved decisions at session start.
+
+#### Deliverables Shipped
+
+- `praxis/plan.py` — Planning-doc parser with Granite structured-JSON inference
+- `praxis/generate.py` — Unified GenerationContext, adapter functions, sanitization pipeline
+- `praxis/cli.py` — Real plan_command implementation
+- `praxis/templates/AGENTS.md.template` — clarifying_questions_block placeholder
+- `tests/sample_planning_doc.md` — Realistic demo planning document
+
+#### Known Limitation
+
+Granite prose output quality varies run-to-run. The sanitizer pipeline catches common artifacts (wrapping fences, known instruction-echo prefixes, outer-wrap quotes, orphan trailing quotes) but exotic phrasings and mid-document fence patterns may slip through. Re-running plan mode typically produces cleaner output. Phase 3 followup: consider template-side regex extraction of fenced prose blocks.
+
+#### Next Phase
+
+**Phase 3** (Bob custom mode wrapper) will package the Praxis CLI as a Bob custom mode that developers can invoke from inside Bob.
+
+---
+
+   - **Status**: Verified in testing — explicit mentions work reliably
+
+2. **Risk**: Clarifying questions might be too generic or off-topic
+   - **Mitigation**: Prompt instructs Granite to ask about unspecified requirements
+   - **Status**: Tested — questions are relevant (auth requirements, database choice, design guidelines)
+
+3. **Risk**: Plan mode output might confuse users (no Python files detected)
+   - **Mitigation**: AGENTS.md clearly states "project does not yet exist" in plan mode
+   - **Status**: Acceptable for v1, documented in generated output
+
+**Testing Performed**:
+- ✅ `python -m praxis analyze .` → Still works after refactor (analyze_smoke.txt)
+- ✅ `python -m praxis plan ./test_plan_temp.md` → Works end-to-end (plan_smoke.txt)
+- ✅ Plan mode inferred Python stack, Flask + pytest frameworks
+- ✅ Plan mode generated 6 files in doc parent directory
+- ✅ Clarifying questions surfaced in AGENTS.md (3 questions about auth, database, design)
+- ✅ PRAXIS_CONTRACT.md mentions Flask and pytest in Granite-generated intro
+- ✅ AGENTS.md states "project does not yet exist" for plan mode
+
+**Next Steps**: Sub-Task 3 will create sample planning documents in tests/ and update documentation.
+
 
 ---
 

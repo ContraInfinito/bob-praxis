@@ -1,139 +1,37 @@
 # Bobcoin Consumption Log
 
-This file tracks AI token consumption (Bobcoins) for each development phase of the Praxis project during the IBM watsonx Challenge 2026 hackathon.
+Tracks Bob IDE Bobcoin consumption per phase. Bobcoins are the IBM Bob hackathon's session-reasoning currency. Each user gets 40 Bobcoins total; once exhausted, no more Bobcoins are issued for the hackathon.
 
-## Purpose
+## Budget
 
-- Monitor token budget usage across phases
-- Identify high-consumption tasks for optimization
-- Ensure we stay within hackathon resource limits
-- Provide transparency for judges on AI assistance usage
+- **Total**: 40 Bobcoins
+- **Demo reserve**: 15 Bobcoins (Phase 4 demo runs)
+- **Dev budget**: 25 Bobcoins (Phases 0-3 reasoning)
 
-## Token Budget Strategy
+## Phase Tracking
 
-- **Total Hackathon Duration**: 48 hours
-- **Estimated Phases**: 4-5 major phases
-- **Budget Approach**: Conservative early phases, reserve tokens for testing/refinement
+| Phase | Description | Estimated | Actual | Cumulative | Remaining | Notes |
+|-------|-------------|-----------|--------|------------|-----------|-------|
+| Bootstrap | Brief restatement, risk analysis, Phase 0 planning | - | 0.29 | 0.29 | 39.71 | Pre-Phase-0 reasoning |
+| Phase 0 | Project initialization and security baseline | 2.0 | 1.10 | 1.39 | 38.61 | File creation, README, LICENSE, gitignore, requirements.txt, bob_sessions setup |
+| Phase 1 | CLI skeleton + Python stack support | 6-10 | TBD | TBD | TBD | praxis package, detect.py, granite.py, generate.py, templates, sample Python project |
+| Phase 2 | Planning-doc mode + Unity stack | 5-8 | TBD | TBD | TBD | praxis plan command, Unity detector, Granite-based planning-doc interpretation |
+| Phase 3 | Bob custom mode wrapper | 3-5 | TBD | TBD | TBD | Custom mode .md file, CLI integration via Bob |
+| Phase 4 | Demo, docs, submission | 1-2 (Bob) + 15 (demo) | TBD | TBD | TBD | README polish, demo video, submission upload |
 
-## Consumption by Phase
+## Update Procedure
 
-### Phase 0: Project Initialization and Security Baseline
+After each phase ends:
+1. Take screenshot of Bob task consumption summary
+2. Save screenshot to `bob_sessions/phase<N>_completion_summary.png`
+3. Update the table row above with actual Bobcoin number
+4. Recompute cumulative and remaining
+5. If actual significantly exceeds estimate, re-evaluate remaining-phase scope
 
-**Date**: May 15, 2026  
-**Time**: ~12:00 PM - 12:35 PM CST (35 minutes)  
-**Status**: ✅ Complete
+## Risk Threshold
 
-#### Tasks Completed
-1. Git status verification
-2. Virtual environment setup (clean + recreate)
-3. MIT LICENSE creation
-4. README.md creation (189 lines)
-5. bob_sessions/ folder + README
-6. CHANGELOG.md initialization (145 lines)
-7. BOBCOIN_LOG.md creation (this file)
-8. .gitignore update
-9. Git commit
-10. Session export
-
-#### Token Consumption
-- **Estimated Bobcoins Used**: ~$0.50 (based on task complexity and file generation)
-- **Primary Consumption**: 
-  - README.md generation (comprehensive documentation)
-  - CHANGELOG.md generation (detailed phase documentation)
-  - Multiple tool uses for file operations and git commands
-
-#### Notes
-- Phase 0 focused on structure, not code implementation
-- High documentation generation but essential for project foundation
-- No watsonx.ai API calls in this phase (only project setup)
+If cumulative consumption reaches 25 Bobcoins before Phase 4 starts, we have crossed into the demo reserve. At that point, immediately cut scope to demo-critical features only.
 
 ---
 
-### Phase 1: Core CLI Implementation (Planned)
-
-**Status**: ⏳ Pending  
-**Estimated Bobcoins**: $1.00 - $1.50
-
-#### Planned Tasks
-- Implement praxis.py main entry point
-- Add argument parsing (analyze/plan modes)
-- Create file reading functionality
-- Implement watsonx.ai integration module
-- Add error handling
-- Basic testing
-
----
-
-### Phase 2: Interactive Plan Mode (Planned)
-
-**Status**: ⏳ Pending  
-**Estimated Bobcoins**: $0.75 - $1.00
-
-#### Planned Tasks
-- Implement interactive prompts
-- Add input validation
-- Create requirements gathering flow
-- Integrate with watsonx.ai
-- Test user experience
-
----
-
-### Phase 3: Output Generation (Planned)
-
-**Status**: ⏳ Pending  
-**Estimated Bobcoins**: $0.75 - $1.00
-
-#### Planned Tasks
-- Implement PRAXIS_CONTRACT.md generation
-- Format AI responses into structured output
-- Add markdown formatting
-- Create output validation
-- Test with various inputs
-
----
-
-### Phase 4: Testing and Refinement (Planned)
-
-**Status**: ⏳ Pending  
-**Estimated Bobcoins**: $1.00 - $1.50
-
-#### Planned Tasks
-- End-to-end testing
-- Bug fixes
-- Documentation updates
-- Performance optimization
-- Final polish
-
----
-
-## Running Total
-
-| Phase | Status | Estimated Bobcoins | Actual Bobcoins | Notes |
-|-------|--------|-------------------|-----------------|-------|
-| Phase 0 | ✅ Complete | $0.50 | TBD (see screenshot) | Project initialization |
-| Phase 1 | ⏳ Pending | $1.00 - $1.50 | - | Core CLI |
-| Phase 2 | ⏳ Pending | $0.75 - $1.00 | - | Interactive mode |
-| Phase 3 | ⏳ Pending | $0.75 - $1.00 | - | Output generation |
-| Phase 4 | ⏳ Pending | $1.00 - $1.50 | - | Testing |
-| **Total** | - | **$4.00 - $5.50** | - | Estimated range |
-
-## Budget Management Notes
-
-- **Conservative Estimates**: Actual consumption may be lower with efficient prompting
-- **Buffer Reserve**: Keeping ~20% buffer for unexpected issues or additional phases
-- **Optimization Opportunities**: Reuse code patterns, minimize regeneration, batch operations
-- **Screenshot Evidence**: Each phase completion includes screenshot of actual token usage
-
-## Update Instructions
-
-After each phase:
-1. Take screenshot of task consumption summary
-2. Update "Actual Bobcoins" column in Running Total table
-3. Add detailed breakdown in phase section
-4. Adjust estimates for remaining phases if needed
-5. Commit changes with phase completion
-
----
-
-**Last Updated**: Phase 0 - May 15, 2026, 12:35 PM CST  
-**Next Update**: Phase 1 completion
+**Last Updated**: Phase 0 complete — May 15, 2026

@@ -1,41 +1,54 @@
 # Praxis
 
-**AI-Powered Project Methodology Generator**
+**A methodology transfer tool for IBM Bob IDE.**
 
-Praxis is a CLI tool that analyzes your project requirements and generates a comprehensive, actionable methodology document (PRAXIS_CONTRACT.md) tailored to your specific needs. It uses IBM watsonx.ai to understand your project context and recommend the best development approach, tech stack, and implementation strategy.
+Praxis takes a developer's AI-collaboration methodology — their opinions about how an AI partner should work alongside them — and projects it onto any given codebase or planning document, producing tailored Bob IDE configuration that makes Bob behave consistently with that methodology on the specific project.
 
-## What is Praxis?
+The name Praxis is Greek for "the practical application of theory." Praxis turns methodology theory (how I want to work with AI) into concrete Bob configuration (skills, custom modes, project rules) applied to a specific project (Python codebase, Unity project, planning doc).
 
-Praxis bridges the gap between project ideas and structured execution plans. Instead of manually researching methodologies, frameworks, and best practices, Praxis:
+## What Praxis Generates
 
-- **Analyzes** your project requirements (from text input or markdown files)
-- **Recommends** appropriate methodologies (Agile, Waterfall, hybrid approaches)
-- **Suggests** optimal tech stacks based on your constraints
-- **Generates** a complete PRAXIS_CONTRACT.md with phases, tasks, and success criteria
-- **Provides** risk assessments and mitigation strategies
+Given either a project directory or a planning document, Praxis produces a tailored set of Bob configuration files:
 
-## Why Praxis Exists
+- `AGENTS.md` — entry-point context document Bob reads on session start
+- `PRAXIS_CONTRACT.md` — top-level AI-collaboration contract: how Bob will work with the developer on this specific project
+- Stack-specific skill file (e.g., `python_skill.md`, `unity_skill.md`) — conventions, dependency awareness, common patterns for the detected stack
+- Methodology skill file — the developer's transferable working-style opinions encoded as Bob behavior
+- `.bobignore` — files Bob should never read or modify
+- A custom Bob mode tailored to this project
 
-Born during the IBM watsonx Challenge 2026 hackathon, Praxis solves a common problem: developers and teams often spend significant time deciding *how* to build something before they can start building. Praxis automates this decision-making process using AI, allowing you to:
+## Architecture
 
-- Start projects faster with clear direction
-- Make informed methodology choices backed by AI analysis
-- Reduce planning overhead and decision fatigue
-- Get consistent, well-structured project plans
+Praxis is a hybrid of two interfaces backed by one engine:
 
-## Features
+1. **CLI core (Python)** — `praxis analyze ./project` or `praxis plan ./spec.md`. Deterministic. Detects stack, parses dependencies, assembles templates, writes output files. Calls watsonx.ai Granite for inference-heavy steps (planning-doc interpretation, stack-tailored prose generation).
+2. **Praxis custom mode (markdown)** — wraps the CLI from inside Bob IDE. Adds conversational refinement and ambiguity handling.
 
-- **Two Input Modes**: Analyze existing markdown files or provide requirements via interactive prompts
-- **AI-Powered Analysis**: Leverages IBM watsonx.ai (granite-3.1-8b-instruct) for intelligent recommendations
-- **Comprehensive Output**: Generates detailed PRAXIS_CONTRACT.md with methodology, stack, phases, and risks
-- **Flexible**: Works with any project type (web apps, APIs, data pipelines, etc.)
-- **Secure**: Uses environment variables for API credentials (never commits secrets)
+The CLI is fully functional standalone. The custom mode is the enhanced experience.
+
+## Default Methodology Principles
+
+Praxis ships with seven hardcoded methodology defaults that users can override by editing the generated output files:
+
+1. **Prompt-first execution** — rewrite vague user input into a structured prompt before acting
+2. **Proactive issue resolution** — fix adjacent issues you spot, log what was done
+3. **Code review by a second agent** — every change critiqued before presentation
+4. **Logging discipline** — every session produces a changelog entry
+5. **Definitional rigor** — define every technical term before using it
+6. **Simplicity bias** — simplest solution that fully solves the problem
+7. **Security baseline** — never plaintext credentials, scan for secrets, honor .bobignore
+
+## Supported Stacks (v1)
+
+- **Python** — requirements.txt and pyproject.toml; detects Flask, FastAPI, Django, pandas/numpy, pytest
+- **Unity** — tool scripts vs game scripts, ScriptableObjects, Editor folder rules, Assembly Definition awareness
+- **Generic fallback** for everything else
 
 ## Installation
 
 ### Prerequisites
 
-- Python 3.8 or higher
+- Python 3.11 or higher
 - IBM watsonx.ai API credentials (API key and Project ID)
 
 ### Setup
@@ -49,10 +62,10 @@ Born during the IBM watsonx Challenge 2026 hackathon, Praxis solves a common pro
 2. **Create and activate virtual environment**:
    ```bash
    python -m venv venv
-   
+
    # On Windows:
    venv\Scripts\activate
-   
+
    # On macOS/Linux:
    source venv/bin/activate
    ```
@@ -67,131 +80,67 @@ Born during the IBM watsonx Challenge 2026 hackathon, Praxis solves a common pro
    ```env
    WATSONX_API_KEY=your_api_key_here
    WATSONX_PROJECT_ID=your_project_id_here
-   WATSONX_URL=https://us-south.ml.cloud.ibm.com
+   WATSONX_ENDPOINT_URL=https://us-south.ml.cloud.ibm.com
    ```
 
    **Important**: Never commit your `.env` file. It's already in `.gitignore`.
 
 ## Usage
 
-Praxis supports two input modes: **analyze** (for existing markdown files) and **plan** (for interactive requirements gathering).
-
-### Mode 1: Analyze Existing Requirements
-
-If you already have a requirements document in markdown format:
-
 ```bash
-python praxis.py analyze path/to/requirements.md
+# Analyze an existing project
+python -m praxis analyze ./my-project
+
+# Bootstrap from a planning document
+python -m praxis plan ./project_spec.md
 ```
 
-**Example**:
-```bash
-python praxis.py analyze docs/project_requirements.md
-```
-
-Praxis will:
-1. Read and parse your markdown file
-2. Send it to watsonx.ai for analysis
-3. Generate `PRAXIS_CONTRACT.md` with recommended methodology and implementation plan
-
-### Mode 2: Interactive Planning
-
-If you want to describe your project interactively:
-
-```bash
-python praxis.py plan
-```
-
-Praxis will prompt you for:
-- Project description
-- Key requirements
-- Constraints (timeline, budget, team size)
-- Technical preferences
-
-Then it generates the same comprehensive `PRAXIS_CONTRACT.md` output.
-
-### Output
-
-Both modes produce a `PRAXIS_CONTRACT.md` file containing:
-
-- **Executive Summary**: Project overview and AI recommendations
-- **Methodology Selection**: Chosen approach (Agile, Waterfall, etc.) with justification
-- **Tech Stack Recommendations**: Languages, frameworks, tools, and why they fit
-- **Implementation Phases**: Detailed breakdown of development stages
-- **Risk Assessment**: Potential challenges and mitigation strategies
-- **Success Criteria**: Measurable goals and KPIs
-
-## Example Workflow
-
-```bash
-# 1. Activate virtual environment
-venv\Scripts\activate
-
-# 2. Run Praxis in plan mode
-python praxis.py plan
-
-# 3. Answer prompts about your project
-# Project description: A real-time chat application for remote teams
-# Key requirements: WebSocket support, user authentication, message history
-# Constraints: 3-month timeline, team of 2 developers
-# Tech preferences: Python backend, React frontend
-
-# 4. Review generated PRAXIS_CONTRACT.md
-# 5. Use it as your project roadmap
-```
+Output appears in `<target>/praxis_output/`.
 
 ## Project Structure
 
 ```
 bob-praxis/
-├── praxis.py              # Main CLI entry point (to be implemented)
-├── requirements.txt       # Python dependencies
+├── praxis/                # Main Python package (Phase 1+)
+│   ├── __init__.py
+│   ├── __main__.py        # Entry point for python -m praxis
+│   ├── cli.py             # Argparse CLI
+│   ├── detect.py          # Stack detection
+│   ├── methodology.py     # Hardcoded methodology defaults
+│   ├── granite.py         # watsonx.ai integration
+│   ├── generate.py        # Template assembly
+│   └── templates/         # Output file templates
+├── tests/                 # Sample projects for testing
+├── bob_sessions/          # Exported Bob task sessions (submission requirement)
+├── requirements.txt
 ├── .env                   # API credentials (not tracked)
-├── .gitignore            # Git exclusions
-├── LICENSE               # MIT License
-├── README.md             # This file
-├── CHANGELOG.md          # Version history
-├── BOBCOIN_LOG.md        # Hackathon token usage tracking
-├── test_watsonx.py       # API connection test script
-└── bob_sessions/         # Development session exports
-    └── README.md         # Session documentation
+├── .gitignore
+├── LICENSE
+├── README.md
+├── CHANGELOG.md
+├── BOBCOIN_LOG.md         # Bobcoin consumption tracking
+└── test_watsonx.py        # watsonx.ai connectivity smoke test
 ```
 
-## Development Status
+## Status
 
-**Current Phase**: Phase 0 - Project Initialization (Complete)
-
-Praxis is being developed as part of the IBM watsonx Challenge 2026 hackathon. The project follows a phased approach:
+Built for the IBM Bob Hackathon, May 15-17, 2026. See CHANGELOG.md for phase-by-phase progress.
 
 - **Phase 0**: ✅ Project setup, security baseline, documentation
-- **Phase 1**: 🔄 Core CLI implementation (analyze mode)
-- **Phase 2**: ⏳ Interactive plan mode
-- **Phase 3**: ⏳ Output generation and formatting
-- **Phase 4**: ⏳ Testing and refinement
-
-See `CHANGELOG.md` for detailed progress updates.
-
-## Contributing
-
-This project is currently in active hackathon development. Contributions, issues, and feature requests are welcome after the initial release.
-
-## License
-
-MIT License - see [LICENSE](LICENSE) file for details.
-
-Copyright (c) 2026 Mathew Carballo López
+- **Phase 1**: 🔄 CLI skeleton + Python stack support
+- **Phase 2**: ⏳ Planning-doc mode + Unity stack
+- **Phase 3**: ⏳ Bob custom mode wrapper
+- **Phase 4**: ⏳ Demo, docs, submission
 
 ## Acknowledgments
 
-- Built for the IBM watsonx Challenge 2026 hackathon
-- Powered by IBM watsonx.ai (granite-3.1-8b-instruct model)
-- Developed with assistance from Cline (AI coding assistant)
+Built for the IBM Bob Hackathon 2026. Developed using IBM Bob IDE (https://bob.ibm.com) and IBM watsonx.ai Granite models. Reviewed and refined with Claude (Anthropic) as a second-agent reviewer.
 
 ## Contact
 
 - GitHub: [@ContraInfinito](https://github.com/ContraInfinito)
 - Repository: [bob-praxis](https://github.com/ContraInfinito/bob-praxis)
 
----
+## License
 
-**Note**: This is a hackathon project under active development. Features and documentation are evolving rapidly.
+MIT — see [LICENSE](LICENSE) file. Copyright (c) 2026 Mathew Carballo López.

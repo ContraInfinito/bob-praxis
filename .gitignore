@@ -23,7 +23,9 @@ Thumbs.db
 
 # Output files
 output.txt
-PRAXIS_CONTRACT.md
+
+# Generated output folders from Praxis runs
+**/praxis_output/
 
 # Bob session screenshots (keep markdown exports, ignore images)
 bob_sessions/*.png

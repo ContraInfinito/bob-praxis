@@ -113,12 +113,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Next Steps (Phase 1)
 
-- Implement core CLI structure (praxis.py)
-- Add argument parsing for analyze/plan modes
-- Implement file reading for analyze mode
-- Create watsonx.ai integration module
-- Add basic error handling
-- Test with sample requirements file
+Per the agreed phase plan, Phase 1 builds:
+
+- `praxis/` Python package with `__init__.py`, `__main__.py`, `cli.py`
+- `praxis/detect.py` — Python stack detection (requirements.txt, pyproject.toml; identifies Flask, FastAPI, Django, pandas/numpy, pytest)
+- `praxis/methodology.py` — the 7 hardcoded methodology principles
+- `praxis/granite.py` — watsonx.ai integration (reuses pattern from test_watsonx.py)
+- `praxis/templates/` — markdown templates for generated outputs (AGENTS.md, PRAXIS_CONTRACT.md, python_skill.md, methodology_skill.md, bobignore, custom_mode.md)
+- `praxis/generate.py` — template assembly into final output files
+- `tests/sample_python_project/` — minimal Python project for demoing
+- End state: `python -m praxis analyze ./tests/sample_python_project` produces 6 output files in that project's `praxis_output/` folder
+
+Phase 1 ship gate: tool demonstrably works on the sample Python project, with realistic stack-tailored output.
 
 ---
 

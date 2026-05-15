@@ -1,0 +1,256 @@
+
+Run:
+
+venv\Scripts\python.exe -m pip install requests python-dotenv
+
+Collecting requests
+  Using cached requests-2.34.2-py3-none-any.whl.metadata (4.8 kB)
+Collecting python-dotenv
+  Using cached python_dotenv-1.2.2-py3-none-any.whl.metadata (27 kB)
+Collecting charset_normalizer<4,>=2 (from requests)
+  Using cached charset_normalizer-3.4.7-cp313-cp313-win_amd64.whl.metadata (41 kB)
+Collecting idna<4,>=2.5 (from requests)
+  Using cached idna-3.15-py3-none-any.whl.metadata (7.7 kB)
+Collecting urllib3<3,>=1.26 (from requests)
+  Using cached urllib3-2.7.0-py3-none-any.whl.metadata (6.9 kB)
+Collecting certifi>=2023.5.7 (from requests)
+  Using cached certifi-2026.4.22-py3-none-any.whl.metadata (2.5 kB)
+Using cached requests-2.34.2-py3-none-any.whl (73 kB)
+Using cached charset_normalizer-3.4.7-cp313-cp313-win_amd64.whl (158 kB)
+Using cached idna-3.15-py3-none-any.whl (72 kB)
+Using cached urllib3-2.7.0-py3-none-any.whl (131 kB)
+Using cached python_dotenv-1.2.2-py3-none-any.whl (22 kB)
+Using cached certifi-2026.4.22-py3-none-any.whl (135 kB)
+Installing collected packages: urllib3, python-dotenv, idna, charset_normalizer, certifi, requests
+
+Successfully installed certifi-2026.4.22 charset_normalizer-3.4.7 idna-3.15 python-dotenv-1.2.2 requests-2.34.2 urllib3-2.7.0
+
+[notice] A new release of pip is available: 26.0.1 -> 26.1.1
+[notice] To update, run: D:\Projects\praxis\bob-praxis\venv\Scripts\python.exe -m pip install --upgrade pip
+
+
+
+Auto-approved commands
+
+
+Run:
+venv\Scripts\python.exe -m pip freeze > requirements.txt
+
+
+Auto-approved commands
+
+
+Verify git status and remote
+Clean and recreate virtual environment
+Create MIT LICENSE
+Create README.md skeleton
+Create bob_sessions/ folder with README
+Initialize CHANGELOG.md
+Create BOBCOIN_LOG.md
+Update .gitignore
+Commit Phase 0 changes
+Export task session
+
+
+Checkpoint
+
+
+
+
+I want to create a new file:
+
+
+Verify git status and remote
+Clean and recreate virtual environment
+Create MIT LICENSE
+Create README.md skeleton
+Create bob_sessions/ folder with README
+Initialize CHANGELOG.md
+Create BOBCOIN_LOG.md
+Update .gitignore
+Commit Phase 0 changes
+Export task session
+
+
+Checkpoint
+
+
+
+
+I want to create a new file:
+
+
+Verify git status and remote
+Clean and recreate virtual environment
+Create MIT LICENSE
+Create README.md skeleton
+Create bob_sessions/ folder with README
+Initialize CHANGELOG.md
+Create BOBCOIN_LOG.md
+Update .gitignore
+Commit Phase 0 changes
+Export task session
+
+
+Run:
+
+mkdir bob_sessions
+
+
+
+    Directorio: D:\Projects\praxis\bob-praxis
+
+
+Mode                 LastWriteTime         Length Name                                                                 
+----                 -------------         ------ ----                                                                 
+d-----         5/15/2026  12:33 PM                bob_sessions                                                         
+
+
+
+
+Auto-approved commands
+
+
+Checkpoint
+
+
+
+
+I want to create a new file:
+
+
+Verify git status and remote
+Clean and recreate virtual environment
+Create MIT LICENSE
+Create README.md skeleton
+Create bob_sessions/ folder with README
+Initialize CHANGELOG.md
+Create BOBCOIN_LOG.md
+Update .gitignore
+Commit Phase 0 changes
+Export task session
+
+
+Checkpoint
+
+
+
+
+I want to create a new file:
+
+
+Verify git status and remote
+Clean and recreate virtual environment
+Create MIT LICENSE
+Create README.md skeleton
+Create bob_sessions/ folder with README
+Initialize CHANGELOG.md
+Create BOBCOIN_LOG.md
+Update .gitignore
+Commit Phase 0 changes
+Export task session
+
+
+Checkpoint
+
+
+
+
+I want to create a new file:
+
+
+Verify git status and remote
+Clean and recreate virtual environment
+Create MIT LICENSE
+Create README.md skeleton
+Create bob_sessions/ folder with README
+Initialize CHANGELOG.md
+Create BOBCOIN_LOG.md
+Update .gitignore
+Commit Phase 0 changes
+Export task session
+
+
+I want to read this file:
+
+
+Checkpoint
+
+
+
+
+I want to edit this file:
+
+
+Verify git status and remote
+Clean and recreate virtual environment
+Create MIT LICENSE
+Create README.md skeleton
+Create bob_sessions/ folder with README
+Initialize CHANGELOG.md
+Create BOBCOIN_LOG.md
+Update .gitignore
+Commit Phase 0 changes
+Export task session
+
+
+Run:
+git add -A
+
+
+Auto-approved commands
+
+
+Run:
+
+git commit -m "Phase 0: Project initialization and security baseline"
+
+[main 70ac06b] Phase 0: Project initialization and security baseline
+ 7 files changed, 567 insertions(+), 4 deletions(-)
+ create mode 100644 BOBCOIN_LOG.md
+ create mode 100644 CHANGELOG.md
+ create mode 100644 LICENSE
+ create mode 100644 README.md
+ create mode 100644 bob_sessions/README.md
+ create mode 100644 requirements.txt
+
+
+Auto-approved commands
+
+
+Verify git status and remote
+Clean and recreate virtual environment
+Create MIT LICENSE
+Create README.md skeleton
+Create bob_sessions/ folder with README
+Initialize CHANGELOG.md
+Create BOBCOIN_LOG.md
+Update .gitignore
+Commit Phase 0 changes
+Export task session
+
+
+Checkpoint
+Current
+
+
+
+
+I want to create a new file:
+
+
+Verify git status and remote
+Clean and recreate virtual environment
+Create MIT LICENSE
+Create README.md skeleton
+Create bob_sessions/ folder with README
+Initialize CHANGELOG.md
+Create BOBCOIN_LOG.md
+Update .gitignore
+Commit Phase 0 changes
+Export task session
+Resume Task
+Terminate
+What's on your mind?
+
+💻 Code

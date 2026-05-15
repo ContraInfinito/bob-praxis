@@ -165,6 +165,123 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
    - **Mitigation**: Argparse supports global flags; can add before subparsers if needed
    - **Status**: Deferred to Phase 2+ based on user feedback
 
+
+#### Sub-Task 3: Templates + Generation Engine (2026-05-15 13:46 CST)
+
+**Completed**: May 15, 2026, ~1:46 PM CST
+
+**What Was Built**:
+1. **Template System (praxis/templates/)**
+   - Created 6 markdown templates with str.format() placeholders:
+     - **AGENTS.md.template** — Entry-point context document (43 lines)
+     - **PRAXIS_CONTRACT.md.template** — Top-level collaboration contract (82 lines)
+     - **python_skill.md.template** — Python-specific conventions and framework guidance (115 lines)
+     - **methodology_skill.md.template** — 7 principles in enforcement form (66 lines)
+     - **bobignore.template** — Static .bobignore file (32 lines)
+     - **custom_mode.md.template** — Per-project custom Bob mode (79 lines)
+   - Total: 417 lines of template content
+
+2. **Generation Engine (praxis/generate.py)**
+   - `generate_outputs(project_path, stack_info)` function (241 lines)
+   - Loads all 6 templates from praxis/templates/
+   - Renders methodology principles in 3 forms: short, full, enforcement
+   - Makes 3 Granite calls for content generation:
+     1. Stack-tailored intro for PRAXIS_CONTRACT.md (2-3 paragraphs)
+     2. Python best practices for python_skill.md (5-8 bullets)
+     3. Project description for AGENTS.md (2-3 sentences)
+   - Formats frameworks and dependencies lists (truncates deps at 10)
+   - Generates framework-specific notes for Flask, FastAPI, Django, pytest, pandas/numpy
+   - Writes all 6 files to <project>/praxis_output/
+   - Returns list of generated file paths
+
+3. **CLI Integration**
+   - Updated `analyze_command` in praxis/cli.py to wire in real implementation
+   - Late imports (detect_stack, generate_outputs) to avoid env loading on --help
+   - Progress messages during Granite calls
+   - Error handling for NotImplementedError (non-Python stacks) and general exceptions
+   - Exit codes: 0 (success), 1 (error), 2 (not implemented)
+
+4. **End-to-End Verification**
+   - Ran `python -m praxis analyze .` on the praxis project itself
+   - Generated 6 files in ./praxis_output/ with realistic content:
+     - AGENTS.md: Granite-generated project description, methodology quick reference
+     - PRAXIS_CONTRACT.md: Full 7 principles, Granite intro mentioning dependencies
+     - python_skill.md: Granite-generated Python best practices, environment management
+     - methodology_skill.md: All 7 principles in enforcement form
+     - .bobignore: Static template with generation date
+     - custom_mode.md: Project-specific Bob mode definition
+   - Verified .gitignore correctly excludes praxis_output/
+
+**Options Considered**:
+
+**For Template Placeholder Format**:
+- **Option A**: Use Jinja2 templating engine
+  - Rejected: External dependency, overkill for simple str.format() substitution
+- **Option B (Chosen)**: Python str.format() with descriptive names
+  - Why: No dependencies, simple, sufficient for our needs
+
+**For Granite Prompt Design**:
+- **Option A**: Single Granite call to generate all content at once
+  - Rejected: Hard to control output structure, mixing concerns
+- **Option B (Chosen)**: Three separate Granite calls, one per output file
+  - Why: Clear separation of concerns, easier to debug, better control over token usage
+
+**For Framework-Specific Notes**:
+- **Option A**: Generate all framework notes via Granite
+  - Rejected: Granite might hallucinate framework features, inconsistent quality
+- **Option B (Chosen)**: Hardcoded framework notes in generate.py, Granite for general best practices
+  - Why: Predictable output, accurate framework guidance, Granite adds project-specific context
+
+**For Dependencies List Formatting**:
+- **Option A**: Show all dependencies regardless of count
+  - Rejected: Projects with 50+ dependencies would bloat output files
+- **Option B (Chosen)**: Truncate at 10, show "...and N more"
+  - Why: Keeps output readable, user can see full list in requirements.txt
+
+**For Output Directory Handling**:
+- **Option A**: Error if praxis_output/ already exists
+  - Rejected: Forces user to manually delete before re-running
+- **Option B (Chosen)**: Create if missing, overwrite if exists
+  - Why: Idempotent behavior, user can re-run analyze without cleanup
+
+**Why This Approach**:
+1. **Template-Based Generation**: Separates structure (templates) from content (Granite + detected info), making it easy to customize output format without touching generation logic
+2. **Three Granite Calls**: Each call has a focused purpose (intro, best practices, project description), producing consistent, high-quality output
+3. **Hardcoded Framework Notes**: Ensures accurate, reliable framework guidance without risk of Granite hallucination
+4. **Methodology Rendering**: Three rendering formats (short, full, enforcement) enable the same principles to appear appropriately in different contexts
+5. **Late Imports in CLI**: Avoids loading .env and Granite on --help, faster CLI response for non-analyze commands
+
+**Risks Identified**:
+1. **Risk**: Granite-generated content might be too generic or off-topic
+   - **Mitigation**: Prompts are specific and constrained ("output ONLY the bullet points, no preamble")
+   - **Status**: Verified in testing — Granite output is relevant and well-formatted
+
+2. **Risk**: Template placeholders might be misspelled or missing
+   - **Mitigation**: generate.py builds a complete placeholder dict; KeyError would surface immediately
+   - **Status**: Tested end-to-end, all placeholders render correctly
+
+3. **Risk**: Granite calls might fail or timeout
+   - **Mitigation**: granite.py has 60-second timeout, raises clear exceptions with response body
+   - **Status**: Tested, Granite calls complete in ~10 seconds each
+
+4. **Risk**: Generated files might overwrite user customizations
+   - **Mitigation**: Documented in templates ("back up customizations before regenerating")
+   - **Status**: Acceptable for v1; Phase 2+ could add --no-overwrite flag
+
+**Testing Performed**:
+- ✅ `python -m praxis analyze .` → Generated 6 files in ./praxis_output/
+- ✅ AGENTS.md contains Granite-generated project description
+- ✅ PRAXIS_CONTRACT.md has full 7 principles + Granite intro
+- ✅ python_skill.md has Granite best practices + hardcoded framework notes
+- ✅ methodology_skill.md has all 7 principles in enforcement form
+- ✅ .bobignore is static template with date filled in
+- ✅ custom_mode.md is functional project-specific mode
+- ✅ .gitignore correctly excludes praxis_output/
+- ✅ All placeholders render correctly (no KeyError)
+- ✅ Granite calls complete successfully (~30 seconds total)
+
+**Next Steps**: Sub-Task 4 will create the sample Python project and perform final integration testing.
+
 **Testing Performed**:
 - ✅ `python -m praxis analyze .` → Success (prints path, acknowledges stub)
 - ✅ `python -m praxis analyze ./nonexistent` → Error with clear message

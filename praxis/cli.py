@@ -24,6 +24,10 @@ def analyze_command(args: argparse.Namespace) -> int:
     Returns:
         Exit code (0 for success, non-zero for failure)
     """
+    # Late imports to avoid loading Granite/env on --help
+    from praxis.detect import detect_stack
+    from praxis.generate import generate_outputs
+    
     project_path = Path(args.path).resolve()
     
     if not project_path.exists():
@@ -35,9 +39,27 @@ def analyze_command(args: argparse.Namespace) -> int:
         return 1
     
     print(f"Analyzing project at: {project_path}")
-    print("Stack detection and generation will be implemented in Sub-Task 2-4")
     
-    return 0
+    try:
+        stack_info = detect_stack(project_path)
+        print(f"Detected stack: {stack_info.stack_name}")
+        if stack_info.frameworks:
+            print(f"Frameworks: {', '.join(stack_info.frameworks)}")
+        
+        print("Generating Bob configuration (this may take 30-60 seconds)...")
+        output_paths = generate_outputs(project_path, stack_info)
+        
+        print(f"\nGenerated {len(output_paths)} files in {project_path / 'praxis_output'}:")
+        for path in output_paths:
+            print(f"  - {path.name}")
+        
+        return 0
+    except NotImplementedError as e:
+        print(f"Error: {e}", file=sys.stderr)
+        return 2
+    except Exception as e:
+        print(f"Error during analysis: {e}", file=sys.stderr)
+        return 1
 
 
 def plan_command(args: argparse.Namespace) -> int:

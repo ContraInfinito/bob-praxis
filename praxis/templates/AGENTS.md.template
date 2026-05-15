@@ -1,0 +1,41 @@
+# Project Context for Bob
+
+**Project**: {project_name}  
+**Stack**: {stack_name}  
+**Frameworks**: {frameworks_list}  
+**Generated**: {generation_date}
+
+## What This Project Is
+
+{granite_agents_context}
+
+## How to Work on This Project
+
+This project uses a structured AI-collaboration methodology defined in `PRAXIS_CONTRACT.md`. Before making changes, read that contract to understand how Bob should work with you on this specific project.
+
+### Key Resources
+
+- **PRAXIS_CONTRACT.md** — The collaboration contract defining how Bob works with you
+- **python_skill.md** — Python-specific conventions and framework guidance for this project
+- **methodology_skill.md** — The 7 methodology principles Bob follows
+- **.bobignore** — Files Bob should never read or modify
+
+### Detected Stack Details
+
+- **Python files**: {python_files_count}
+- **Dependencies**: {dependencies_list}
+
+## Session Start Checklist
+
+When starting a new session on this project:
+
+1. Read PRAXIS_CONTRACT.md to refresh on the collaboration contract
+2. Check python_skill.md for stack-specific conventions
+3. Review .bobignore to know what files are off-limits
+4. Ask clarifying questions before acting on ambiguous requests
+
+## Methodology Principles (Quick Reference)
+
+{methodology_principles_short}
+
+For full details on each principle, see PRAXIS_CONTRACT.md.

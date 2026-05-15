@@ -26,7 +26,7 @@ def analyze_command(args: argparse.Namespace) -> int:
     """
     # Late imports to avoid loading Granite/env on --help
     from praxis.detect import detect_stack
-    from praxis.generate import generate_outputs
+    from praxis.generate import generate_outputs, _stack_info_to_context
     
     project_path = Path(args.path).resolve()
     
@@ -47,7 +47,8 @@ def analyze_command(args: argparse.Namespace) -> int:
             print(f"Frameworks: {', '.join(stack_info.frameworks)}")
         
         print("Generating Bob configuration (this may take 30-60 seconds)...")
-        output_paths = generate_outputs(project_path, stack_info)
+        context = _stack_info_to_context(stack_info, project_path)
+        output_paths = generate_outputs(project_path, context)
         
         print(f"\nGenerated {len(output_paths)} files in {project_path / 'praxis_output'}:")
         for path in output_paths:
@@ -66,8 +67,8 @@ def plan_command(args: argparse.Namespace) -> int:
     """
     Handle the 'plan' subcommand.
     
-    Bootstraps Bob IDE configuration from a planning document.
-    This is a Phase 2+ feature and is currently a stub.
+    Parses a planning document and generates Bob IDE configuration for the
+    described project.
     
     Args:
         args: Parsed command-line arguments containing 'path'
@@ -75,9 +76,54 @@ def plan_command(args: argparse.Namespace) -> int:
     Returns:
         Exit code (0 for success, non-zero for failure)
     """
-    print("The 'plan' command is not yet implemented.")
-    print("This feature will be available in Phase 2.")
-    return 0
+    # Late imports
+    from praxis.plan import parse_planning_doc
+    from praxis.generate import generate_outputs, _plan_info_to_context
+    
+    doc_path = Path(args.path).resolve()
+    
+    if not doc_path.exists():
+        print(f"Error: Planning document does not exist: {doc_path}", file=sys.stderr)
+        return 1
+    
+    if not doc_path.is_file():
+        print(f"Error: Path is not a file: {doc_path}", file=sys.stderr)
+        return 1
+    
+    print(f"Reading planning document: {doc_path}")
+    print("Calling Granite to extract project intent...")
+    
+    try:
+        plan_info = parse_planning_doc(doc_path)
+        
+        print(f"Inferred stack: {plan_info.inferred_stack}")
+        if plan_info.inferred_frameworks:
+            print(f"Frameworks: {', '.join(plan_info.inferred_frameworks)}")
+        if plan_info.clarifying_questions:
+            print(f"Open questions found: {len(plan_info.clarifying_questions)}")
+        
+        # Output goes in the doc's parent directory
+        output_root = doc_path.parent
+        context = _plan_info_to_context(plan_info, doc_path)
+        
+        print("Generating Bob configuration (this may take 30-60 seconds)...")
+        output_paths = generate_outputs(output_root, context)
+        
+        print(f"\nGenerated {len(output_paths)} files in {output_root / 'praxis_output'}:")
+        for path in output_paths:
+            print(f"  - {path.name}")
+        
+        if plan_info.clarifying_questions:
+            print(f"\n{len(plan_info.clarifying_questions)} clarifying questions surfaced in AGENTS.md")
+            print("Bob will ask the developer about these at session start.")
+        
+        return 0
+    except NotImplementedError as e:
+        print(f"Error: {e}", file=sys.stderr)
+        return 2
+    except Exception as e:
+        print(f"Error during planning: {e}", file=sys.stderr)
+        return 1
 
 
 def main() -> int:

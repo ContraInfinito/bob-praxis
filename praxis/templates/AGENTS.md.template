@@ -33,7 +33,7 @@ When starting a new session on this project:
 2. Check python_skill.md for stack-specific conventions
 3. Review .bobignore to know what files are off-limits
 4. Ask clarifying questions before acting on ambiguous requests
-
+{clarifying_questions_block}
 ## Methodology Principles (Quick Reference)
 
 {methodology_principles_short}

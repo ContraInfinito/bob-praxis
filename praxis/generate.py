@@ -5,12 +5,52 @@ Assembles templates with detected stack information and Granite-generated
 content to produce tailored Bob IDE configuration files.
 """
 
+from dataclasses import dataclass, field
 from pathlib import Path
 from datetime import datetime, timezone
 
 from praxis.detect import StackInfo
+from praxis.plan import PlanInfo
 from praxis.granite import generate as granite_generate
 from praxis.methodology import METHODOLOGY_PRINCIPLES
+
+
+__all__ = [
+    "generate_outputs",
+    "_stack_info_to_context",
+    "_plan_info_to_context",
+    "GenerationContext",
+]
+
+
+@dataclass
+class GenerationContext:
+    """
+    Unified input for the generation engine.
+    
+    Both StackInfo (analyze mode) and PlanInfo (plan mode) are adapted into
+    this shape. Templates only see GenerationContext, not the source type.
+    """
+    project_name: str
+    stack_name: str  # "Python" or "Generic"
+    frameworks: list[str] = field(default_factory=list)
+    
+    # Analyze-mode fields (empty for plan mode)
+    dependencies: list[str] = field(default_factory=list)
+    python_files_count: int = 0
+    
+    # Plan-mode fields (empty for analyze mode)
+    project_purpose: str = ""
+    features: list[str] = field(default_factory=list)
+    integrations: list[str] = field(default_factory=list)
+    clarifying_questions: list[str] = field(default_factory=list)
+    
+    # Grounding context for Granite prompts (README for analyze, source doc for plan)
+    grounding_context: str = ""
+    grounding_source_label: str = ""  # "README" or "planning document"
+    
+    # Mode flag for template branching
+    mode: str = "analyze"  # "analyze" or "plan"
 
 
 def _format_frameworks_list(frameworks: list[str]) -> str:
@@ -152,33 +192,67 @@ def _read_project_readme(project_path: Path, max_chars: int = 1500) -> str:
     return ""
 
 
-def generate_outputs(project_path: Path, stack_info: StackInfo) -> list[Path]:
-    """
-    Generate Bob IDE configuration files for a project.
+def _stack_info_to_context(stack_info: StackInfo, project_path: Path) -> GenerationContext:
+    """Adapt StackInfo (analyze mode) into a GenerationContext."""
+    return GenerationContext(
+        project_name=project_path.name,
+        stack_name=stack_info.stack_name,
+        frameworks=stack_info.frameworks,
+        dependencies=stack_info.dependencies,
+        python_files_count=stack_info.python_files_count,
+        grounding_context=_read_project_readme(project_path),
+        grounding_source_label="README",
+        mode="analyze",
+    )
+
+
+def _plan_info_to_context(plan_info: PlanInfo, doc_path: Path) -> GenerationContext:
+    """Adapt PlanInfo (plan mode) into a GenerationContext."""
+    # Use the doc's filename (without extension) as project_name, since
+    # there's no project directory yet
+    project_name = doc_path.stem
     
-    Loads templates, calls Granite for content generation, assembles final
-    output files, and writes them to <project_path>/praxis_output/.
+    return GenerationContext(
+        project_name=project_name,
+        stack_name=plan_info.inferred_stack,
+        frameworks=plan_info.inferred_frameworks,
+        project_purpose=plan_info.project_purpose,
+        features=plan_info.features,
+        integrations=plan_info.integrations,
+        clarifying_questions=plan_info.clarifying_questions,
+        grounding_context=plan_info.source_doc_excerpt,
+        grounding_source_label="planning document",
+        mode="plan",
+    )
+
+
+def generate_outputs(
+    output_root_path: Path,
+    context: GenerationContext,
+) -> list[Path]:
+    """
+    Generate Bob IDE configuration files from a GenerationContext.
     
     Args:
-        project_path: Path to the project directory
-        stack_info: Detected stack information
-        
+        output_root_path: Directory where praxis_output/ will be created
+        context: Unified context (from either StackInfo or PlanInfo)
+    
     Returns:
         List of paths to generated output files
-        
+    
     Raises:
         NotImplementedError: If stack is not Python (Phase 1 limitation)
         OSError: If template files cannot be read or output cannot be written
     """
     # Phase 1 limitation: only Python stack supported
-    if stack_info.stack_name != "Python":
+    if context.stack_name != "Python":
         raise NotImplementedError(
             f"Only Python stack is supported in Phase 1. "
-            f"Detected stack: {stack_info.stack_name}"
+            f"Detected stack: {context.stack_name}"
         )
     
     # Determine output directory
-    output_dir = project_path / "praxis_output"
+    output_dir = output_root_path / "praxis_output"
     output_dir.mkdir(exist_ok=True)
     
     # Load templates
@@ -199,10 +273,10 @@ def generate_outputs(project_path: Path, stack_info: StackInfo) -> list[Path]:
             templates[output_name] = f.read()
     
     # Prepare common placeholders
-    project_name = project_path.name
+    project_name = context.project_name
     generation_date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-    frameworks_list = _format_frameworks_list(stack_info.frameworks)
-    dependencies_list = _format_dependencies_list(stack_info.dependencies)
+    frameworks_list = _format_frameworks_list(context.frameworks)
+    dependencies_list = _format_dependencies_list(context.dependencies)
     
     # Render methodology in three forms
     methodology_short = _render_methodology_short()
@@ -210,20 +284,26 @@ def generate_outputs(project_path: Path, stack_info: StackInfo) -> list[Path]:
     methodology_enforcement = _render_methodology_enforcement()
     
     # Generate framework-specific notes
-    framework_notes = _generate_framework_notes(stack_info.frameworks)
+    framework_notes = _generate_framework_notes(context.frameworks)
     
-    # Read README for grounding context (prevents Granite hallucination)
-    readme_excerpt = _read_project_readme(project_path)
-    if readme_excerpt:
-        readme_context = (
-            f"\n\nProject README excerpt (use this as ground truth about what the "
-            f"project actually does — do not invent a different purpose):\n"
-            f"---\n{readme_excerpt}\n---"
-        )
+    # Build grounding context block (works for both README and planning doc)
+    if context.grounding_context:
+        if context.mode == "plan":
+            grounding_block = (
+                f"\n\nThis is a planning document for a project that doesn't yet exist. "
+                f"Use it as ground truth for what the project will do.\n"
+                f"Planning document excerpt:\n---\n{context.grounding_context}\n---"
+            )
+        else:
+            grounding_block = (
+                f"\n\nProject {context.grounding_source_label} excerpt (use this as ground "
+                f"truth about what the project actually does — do not invent a different "
+                f"purpose):\n---\n{context.grounding_context}\n---"
+            )
     else:
-        readme_context = (
-            f"\n\nNo README found. Describe the project conservatively based only on "
-            f"its name, stack, and dependencies. Do not invent a purpose."
+        grounding_block = (
+            f"\n\nNo {context.grounding_source_label} available. Describe the project "
+            f"conservatively based only on its name, stack, and frameworks. Do not invent."
         )
     
     # Shared tone constraint for all prose-generation prompts
@@ -235,18 +315,27 @@ def generate_outputs(project_path: Path, stack_info: StackInfo) -> list[Path]:
         "CEO opening a keynote."
     )
     
+    # Plan-mode specific additions for Granite prompts
+    if context.mode == "plan":
+        plan_extras = (
+            f"\nDetected features: {', '.join(context.features) if context.features else 'none specified'}. "
+            f"Detected integrations: {', '.join(context.integrations) if context.integrations else 'none specified'}."
+        )
+    else:
+        plan_extras = ""
+    
     # Make Granite calls for content generation
     print("  Calling Granite for PRAXIS_CONTRACT.md introduction...")
     granite_intro_prompt = (
         f"Write 2 short paragraphs (4-5 sentences total) introducing how Bob (an AI "
         f"development partner) will work on the '{project_name}' project. "
-        f"Stack: {stack_info.stack_name}. Detected frameworks: {frameworks_list}. "
-        f"Detected dependencies: {dependencies_list}.\n\n"
+        f"Stack: {context.stack_name}. Detected frameworks: {frameworks_list}. "
+        f"Detected dependencies: {dependencies_list}.{plan_extras}\n\n"
         f"Address Bob in second person. Mention the detected frameworks or "
         f"dependencies concretely. Focus on what Bob's collaboration will involve "
         f"day-to-day, not abstract goals.\n\n"
         f"{tone_rules}"
-        f"{readme_context}\n\n"
+        f"{grounding_block}\n\n"
         f"Output only the prose. No headers, no meta-commentary, no 'Dear Bob' "
         f"salutation, no signature."
     )
@@ -269,24 +358,32 @@ def generate_outputs(project_path: Path, stack_info: StackInfo) -> list[Path]:
     granite_agents_prompt = (
         f"Write a brief 2-3 sentence factual description of the '{project_name}' "
         f"project for an AI development partner to read at session start. "
-        f"Stack: {stack_info.stack_name}. Detected frameworks: {frameworks_list}.\n\n"
+        f"Stack: {context.stack_name}. Detected frameworks: {frameworks_list}.\n\n"
         f"The description should answer: what does this project do? Be specific and "
         f"factual. If you don't know what the project does, say so plainly instead "
         f"of inventing a purpose.\n\n"
         f"{tone_rules}"
-        f"{readme_context}\n\n"
+        f"{grounding_block}\n\n"
         f"Output ONLY the description prose, no headers or meta-commentary."
     )
     granite_agents_context = granite_generate(granite_agents_prompt, max_tokens=150)
     
+    # Build clarifying questions block for plan mode
+    if context.mode == "plan" and context.clarifying_questions:
+        clarifying_questions_block = "\n## Open Questions for the Developer\n\nThe planning document didn't specify these. Ask the developer at session start:\n\n"
+        for q in context.clarifying_questions:
+            clarifying_questions_block += f"- {q}\n"
+    else:
+        clarifying_questions_block = ""
+    
     # Build placeholder dictionary
     placeholders = {
         "project_name": project_name,
-        "stack_name": stack_info.stack_name,
+        "stack_name": context.stack_name,
         "generation_date": generation_date,
         "frameworks_list": frameworks_list,
         "dependencies_list": dependencies_list,
-        "python_files_count": str(stack_info.python_files_count),
+        "python_files_count": str(context.python_files_count),
         "methodology_principles_short": methodology_short,
         "methodology_principles_full": methodology_full,
         "methodology_enforcement": methodology_enforcement,
@@ -294,6 +391,7 @@ def generate_outputs(project_path: Path, stack_info: StackInfo) -> list[Path]:
         "granite_skill_content": granite_skill_content.strip(),
         "granite_agents_context": granite_agents_context.strip(),
         "framework_specific_notes": framework_notes,
+        "clarifying_questions_block": clarifying_questions_block,
     }
     
     # Render and write all templates

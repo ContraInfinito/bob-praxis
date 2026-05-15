@@ -122,25 +122,41 @@ Planning document:
     # Step 4: Call Granite, parse JSON
     response = granite_generate(prompt, max_tokens=1000)
     
+    # Strip code fences if present (Granite sometimes adds them despite instructions)
+    def strip_code_fences(text: str) -> str:
+        """Remove markdown code fences from JSON response."""
+        text = text.strip()
+        # Remove opening fence
+        if text.startswith("```json"):
+            text = text[7:]
+        elif text.startswith("```"):
+            text = text[3:]
+        # Remove closing fence
+        if text.endswith("```"):
+            text = text[:-3]
+        return text.strip()
+    
     # Try to parse JSON
     parsed_json: dict[str, Any] | None = None
     parse_error: str | None = None
     
     try:
-        parsed_json = json.loads(response)
+        cleaned_response = strip_code_fences(response)
+        parsed_json = json.loads(cleaned_response)
     except json.JSONDecodeError as e:
         parse_error = str(e)
         
         # Retry once with follow-up prompt
         retry_prompt = f"""Your previous response was not valid JSON. The parse error was: {parse_error}
 
-Return ONLY a valid JSON object matching the schema. No preamble, no code 
+Return ONLY a valid JSON object matching the schema. No preamble, no code
 fences, no explanation. Just the JSON. Try again."""
         
         retry_response = granite_generate(retry_prompt, max_tokens=1000)
         
         try:
-            parsed_json = json.loads(retry_response)
+            cleaned_retry = strip_code_fences(retry_response)
+            parsed_json = json.loads(cleaned_retry)
         except json.JSONDecodeError as e2:
             raise RuntimeError(
                 f"Granite returned malformed JSON twice.\n"

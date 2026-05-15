@@ -91,31 +91,31 @@ def _parse_requirements_txt(requirements_path: Path) -> list[str]:
                 lines = f.readlines()
         
         for line in lines:
-                # Strip whitespace
-                line = line.strip()
-                
-                # Skip empty lines and comments
-                if not line or line.startswith("#"):
-                    continue
-                
-                # Strip inline comments
-                if "#" in line:
-                    line = line.split("#")[0].strip()
-                
-                # Strip editable install prefix
-                if line.startswith("-e "):
-                    line = line[3:].strip()
-                
-                # Strip version specifiers
-                for separator in ["==", ">=", "<=", ">", "<", "~=", "!=", "[", ";"]:
-                    if separator in line:
-                        line = line.split(separator)[0].strip()
-                        break
-                
-                # Strip BOM if present and lowercase
-                if line:
-                    line = line.lstrip('\ufeff')
-                    dependencies.append(line.lower())
+            # Strip whitespace
+            line = line.strip()
+            
+            # Skip empty lines and comments
+            if not line or line.startswith("#"):
+                continue
+            
+            # Strip inline comments
+            if "#" in line:
+                line = line.split("#")[0].strip()
+            
+            # Strip editable install prefix
+            if line.startswith("-e "):
+                line = line[3:].strip()
+            
+            # Strip version specifiers
+            for separator in ["==", ">=", "<=", ">", "<", "~=", "!=", "[", ";"]:
+                if separator in line:
+                    line = line.split(separator)[0].strip()
+                    break
+            
+            # Strip BOM if present and lowercase
+            if line:
+                line = line.lstrip('\ufeff')
+                dependencies.append(line.lower())
     
     except (OSError, UnicodeDecodeError) as e:
         # If file can't be read, return empty list rather than failing

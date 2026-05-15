@@ -244,5 +244,3 @@ Built with Flask and PostgreSQL. Will use pytest for testing.
         print(f"Clarifying questions: {result.clarifying_questions}")
     finally:
         doc_path.unlink()
-
-# Made with Bob

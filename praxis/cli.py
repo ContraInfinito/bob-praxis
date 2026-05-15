@@ -173,10 +173,11 @@ def main() -> int:
     # 'plan' subcommand
     plan_parser = subparsers.add_parser(
         "plan",
-        help="Bootstrap from a planning document (Phase 2+)",
+        help="Generate Bob configuration from a planning document",
         description=(
-            "Interprets a planning document (markdown, text, or PDF) and generates "
-            "Bob IDE configuration for a new project. This feature is not yet implemented."
+            "Interprets a planning document (markdown or text) and generates Bob IDE "
+            "configuration for a project described by the document. Use this when you have a "
+            "project spec but no code yet."
         ),
     )
     plan_parser.add_argument(

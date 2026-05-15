@@ -53,6 +53,65 @@ class GenerationContext:
     mode: str = "analyze"  # "analyze" or "plan"
 
 
+def _sanitize_granite_output(text: str) -> str:
+    """
+    Strip common Granite output noise before insertion into templates.
+
+    Removes instruction-echo preambles ("Remember to...", "Output only...",
+    "Sure,...", etc.) and stray trailing quotes that don't match an opening
+    quote. Prevents Granite's occasional artifacts from leaking into the
+    final rendered documents.
+    """
+    text = text.strip()
+
+    # Strip wrapping code fences (Granite sometimes wraps prose in ```...```)
+    if text.startswith("```"):
+        # Skip the opening fence line (which may have a language tag like ```python)
+        first_newline = text.find("\n")
+        if first_newline != -1:
+            text = text[first_newline + 1:]
+        else:
+            text = text[3:]
+        # Strip closing fence
+        if text.rstrip().endswith("```"):
+            text = text.rstrip()[:-3].rstrip()
+    text = text.strip()
+
+    # Strip leading instruction-echo lines
+    instruction_echoes = (
+        "Remember to", "Output only", "Output ONLY", "Output will", "Output:",
+        "Write a", "Write 2", "Write the", "Use double", "Use single", "Use the",
+        "Here is", "Here's", "Sure,", "Certainly,", "Below is", "As requested",
+        "Of course", "Note:", "Notes:", "Response:", "Answer:", "Following the",
+        "Per the", "Per your", "As per", "Based on",
+    )
+    lines = text.split("\n")
+    while lines and any(lines[0].strip().startswith(p) for p in instruction_echoes):
+        lines = lines[1:]
+    text = "\n".join(lines).strip()
+
+    # Strip outer wrapping quotes if Granite wrapped the entire output
+    # in matched double quotes. Safety check: don't strip if removing the
+    # outer pair would expose another quote, which would mean we're
+    # mangling legitimate nested quotation marks.
+    if (
+        len(text) >= 2
+        and text.startswith('"')
+        and text.endswith('"')
+        and text.count('"') >= 2
+        and text.count('"') % 2 == 0
+    ):
+        inner = text[1:-1].strip()
+        if not (inner.startswith('"') or inner.endswith('"')):
+            text = inner
+
+    # Strip orphan trailing quote (closing quote without matching opening)
+    if text.endswith('"') and text.count('"') % 2 == 1:
+        text = text[:-1].rstrip()
+
+    return text
+
+
 def _format_frameworks_list(frameworks: list[str]) -> str:
     """Format frameworks list for display."""
     if not frameworks:
@@ -327,8 +386,9 @@ def generate_outputs(
     # Make Granite calls for content generation
     print("  Calling Granite for PRAXIS_CONTRACT.md introduction...")
     granite_intro_prompt = (
-        f"Write 2 short paragraphs (4-5 sentences total) introducing how Bob (an AI "
-        f"development partner) will work on the '{project_name}' project. "
+        f"Write EXACTLY ONE response containing 2 short paragraphs (4-5 sentences total) "
+        f"introducing how Bob (an AI development partner) will work on the '{project_name}' project. "
+        f"Do not provide multiple versions. Do not duplicate the response. "
         f"Stack: {context.stack_name}. Detected frameworks: {frameworks_list}. "
         f"Detected dependencies: {dependencies_list}.{plan_extras}\n\n"
         f"Address Bob in second person. Mention the detected frameworks or "
@@ -339,11 +399,12 @@ def generate_outputs(
         f"Output only the prose. No headers, no meta-commentary, no 'Dear Bob' "
         f"salutation, no signature."
     )
-    granite_intro_prose = granite_generate(granite_intro_prompt, max_tokens=300)
+    granite_intro_prose = _sanitize_granite_output(granite_generate(granite_intro_prompt, max_tokens=300))
     
     print("  Calling Granite for python_skill.md best practices...")
     granite_skill_prompt = (
-        f"Write Python development best practices tailored to a project using these "
+        f"Write EXACTLY ONE response with Python development best practices tailored to a project using these "
+        f"Do not provide multiple versions. Do not duplicate bullets. "
         f"frameworks: {frameworks_list}. Detected dependencies: {dependencies_list}. "
         f"Output 5-8 bullet points covering Python-specific conventions relevant to "
         f"this exact dependency set. "
@@ -352,11 +413,12 @@ def generate_outputs(
         f"If pandas/numpy is detected, include a bullet about data handling. "
         f"Output ONLY the bullet points, no preamble, no header, no closing."
     )
-    granite_skill_content = granite_generate(granite_skill_prompt, max_tokens=400)
+    granite_skill_content = _sanitize_granite_output(granite_generate(granite_skill_prompt, max_tokens=400))
     
     print("  Calling Granite for AGENTS.md project context...")
     granite_agents_prompt = (
-        f"Write a brief 2-3 sentence factual description of the '{project_name}' "
+        f"Write EXACTLY ONE response: a brief 2-3 sentence factual description of the '{project_name}' "
+        f"Do not provide multiple versions. Do not preface with 'Description:' or similar. "
         f"project for an AI development partner to read at session start. "
         f"Stack: {context.stack_name}. Detected frameworks: {frameworks_list}.\n\n"
         f"The description should answer: what does this project do? Be specific and "
@@ -366,7 +428,7 @@ def generate_outputs(
         f"{grounding_block}\n\n"
         f"Output ONLY the description prose, no headers or meta-commentary."
     )
-    granite_agents_context = granite_generate(granite_agents_prompt, max_tokens=150)
+    granite_agents_context = _sanitize_granite_output(granite_generate(granite_agents_prompt, max_tokens=150))
     
     # Build clarifying questions block for plan mode
     if context.mode == "plan" and context.clarifying_questions:

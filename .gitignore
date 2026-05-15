@@ -32,3 +32,7 @@ bob_sessions/*.png
 bob_sessions/*.jpg
 bob_sessions/*.jpeg
 bob_sessions/*.gif
+
+# Verification capture files
+*_output.txt
+*_smoke*.txt

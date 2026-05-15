@@ -5,6 +5,91 @@ All notable changes to the Praxis project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+### Phase 2 - Planning-Doc Mode (2026-05-15)
+
+**Status**: In Progress
+
+#### Sub-Task 1: Planning-Doc Parser (2026-05-15 15:31 CST)
+
+**Completed**: May 15, 2026, ~3:33 PM CST
+
+**What Was Built**:
+1. **Planning Document Parser Module (praxis/plan.py)**
+   - Created `PlanInfo` dataclass with 7 fields:
+     - `inferred_stack`: "Python" or "Generic" (Unity deferred to v2)
+     - `inferred_frameworks`: List of detected frameworks (Flask, FastAPI, Django, pandas, numpy, pytest)
+     - `project_purpose`: 1-2 sentence factual description
+     - `features`: 3-7 short phrases describing concrete features
+     - `integrations`: External systems mentioned (databases, APIs, services)
+     - `clarifying_questions`: 0-5 questions about unspecified requirements
+     - `source_doc_excerpt`: First 1500 chars of the document for downstream use
+   
+2. **parse_planning_doc Function**
+   - Input validation: checks file exists, is a file, has .md/.markdown/.txt extension
+   - Document reading: UTF-8 with latin-1 fallback, BOM stripping, 8000 char cap
+   - Granite integration: Single structured-JSON inference call with detailed prompt
+   - JSON parsing: Attempts parse, retries once on failure with follow-up prompt
+   - Field validation: Coerces types, provides sensible defaults for missing fields
+   - Returns populated PlanInfo dataclass
+   
+3. **Inline Self-Test**
+   - Hardcoded sample planning doc (Recipe Sharing API with Flask + PostgreSQL)
+   - Creates temp file, parses it, prints extracted fields
+   - Verified output: correctly inferred Python stack, Flask + pytest frameworks, 5 features, 2 integrations, 2 clarifying questions
+
+**Options Considered**:
+
+**For Granite Prompt Design**:
+- **Option A**: Ask Granite to generate free-form analysis
+  - Rejected: Hard to parse, inconsistent structure
+- **Option B (Chosen)**: Request strict JSON schema with explicit rules
+  - Why: Predictable output, easy to parse, clear validation
+
+**For JSON Parsing Retry Logic**:
+- **Option A**: Fail immediately on malformed JSON
+  - Rejected: Granite occasionally needs a nudge to fix formatting
+- **Option B (Chosen)**: Retry once with error feedback
+  - Why: Improves reliability without adding complexity
+
+**For Document Length Handling**:
+- **Option A**: Reject documents over 8000 chars
+  - Rejected: User might have legitimate long planning docs
+- **Option B (Chosen)**: Truncate with marker, keep first 8000 chars
+  - Why: Graceful degradation, most important content is usually at the start
+
+**Why This Approach**:
+1. **Structured JSON Output**: Granite's structured inference produces consistent, parsable results
+2. **Retry Logic**: Single retry with error feedback handles Granite's occasional formatting issues
+3. **Graceful Validation**: Coerces types and provides defaults rather than failing on minor issues
+4. **Reuses Patterns**: UTF-8/latin-1 fallback and BOM stripping match detect.py's proven approach
+5. **Self-Contained Testing**: Inline self-test verifies module works without external dependencies
+
+**Risks Identified**:
+1. **Risk**: Granite might return generic or off-topic content
+   - **Mitigation**: Prompt includes explicit rules and examples
+   - **Status**: Verified in self-test — output is relevant and specific
+
+2. **Risk**: JSON parsing might fail on complex planning documents
+   - **Mitigation**: Retry logic with error feedback, graceful defaults
+   - **Status**: Tested with sample doc, parsing succeeded
+
+3. **Risk**: 8000 char limit might truncate critical information
+   - **Mitigation**: Most planning docs are shorter; critical info usually at start
+   - **Status**: Acceptable for v1, can increase limit if needed
+
+**Testing Performed**:
+- ✅ `python -m praxis.plan` → Successfully parsed sample planning doc
+- ✅ Inferred stack: Python (correct)
+- ✅ Frameworks: Flask, pytest (correct)
+- ✅ Purpose: Factual description of Recipe Sharing API
+- ✅ Features: 5 concrete features extracted
+- ✅ Integrations: PostgreSQL, Stripe (correct)
+- ✅ Clarifying questions: 2 relevant questions about premium features and authentication
+
+**Next Steps**: Sub-Task 2 will wire `praxis plan` into the CLI and modify generate.py to accept PlanInfo as input.
+
+---
+
 ### Phase 1 - CLI Skeleton + Python Stack Support (2026-05-15)
 
 **Status**: In Progress

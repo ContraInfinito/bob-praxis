@@ -62,11 +62,11 @@ customModes:
 
       ```
       9. Read the generated files (their paths are printed to stdout, one per line). The location and file set depend on the target:
-         - bob: `<target_directory>/praxis_output/` — six files (AGENTS.md, PRAXIS_CONTRACT.md, python_skill.md, methodology_skill.md, .bobignore, custom_mode.md)
+         - bob: five files in `<target_directory>/praxis_output/` (AGENTS.md, PRAXIS_CONTRACT.md, python_skill.md, methodology_skill.md, .bobignore) PLUS `<target_directory>/.bob/custom_modes.yaml` — the loadable Bob mode definition
          - claude-code: `<target_directory>/CLAUDE.md` — single file
          - cursor: `<target_directory>/.cursor/rules/methodology.mdc` and `<target_directory>/.cursor/rules/python.mdc` — two files
       10. Report what was detected: stack, frameworks, dependency count, target. Tell the user where the generated files live.
-      11. If target is bob, adopt the generated AGENTS.md and PRAXIS_CONTRACT.md as session context. Suggest loading the generated `custom_mode.md` for future sessions.
+      11. If target is bob, adopt the generated AGENTS.md and PRAXIS_CONTRACT.md as session context. Mention that the generated `.bob/custom_modes.yaml` will be auto-discovered by Bob the next time the project is opened — the project-specific mode is now loadable without any manual import step.
       12. If target is claude-code, mention that CLAUDE.md will be auto-loaded next time Claude Code opens this project.
       13. If target is cursor, mention that .cursor/rules/ will be auto-discovered next time Cursor opens this project.
 
@@ -157,7 +157,7 @@ customModes:
 
       Once Praxis has been applied and the generated configuration is in place, switch to the appropriate mode for ongoing work:
 
-      - bob target → load the generated `custom_mode.md` as a project-specific Bob mode.
+      - bob target → the generated `.bob/custom_modes.yaml` is auto-discovered by Bob the next time the project is opened. No manual import step.
       - claude-code target → open the project in Claude Code; CLAUDE.md is auto-loaded.
       - cursor target → open the project in Cursor; .cursor/rules/ is auto-discovered.
 

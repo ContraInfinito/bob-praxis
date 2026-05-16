@@ -19,6 +19,7 @@ rendered against any of the three target template families. Templates live in
 location.
 """
 
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from datetime import datetime, timezone
@@ -143,6 +144,30 @@ def _sanitize_inference_output(text: str) -> str:
         text = text[:-1].rstrip()
 
     return text
+
+
+def _slugify(name: str) -> str:
+    """
+    Convert a project name into a Bob-mode-slug-safe form.
+
+    Rules:
+      1. Lowercase the input.
+      2. Replace any character that isn't ``[a-z0-9]`` with a single hyphen.
+      3. Collapse consecutive hyphens.
+      4. Strip leading and trailing hyphens.
+
+    Examples:
+        "My Project"             -> "my-project"
+        "sample_python_project"  -> "sample-python-project"
+        "weird!!name__here"      -> "weird-name-here"
+
+    Used to derive the ``slug`` field of the generated Bob mode YAML so
+    downstream Bob can load the mode by its (URL-safe) identifier.
+    """
+    s = name.lower()
+    s = re.sub(r"[^a-z0-9]", "-", s)  # any non-alphanumeric -> hyphen
+    s = re.sub(r"-+", "-", s)           # collapse consecutive hyphens
+    return s.strip("-")
 
 
 def _format_frameworks_list(frameworks: list[str]) -> str:
@@ -350,18 +375,29 @@ def _build_placeholders(context: GenerationContext) -> dict:
     else:
         clarifying_questions_block = ""
 
+    # Pre-indented variant of methodology_principles_short for use inside YAML
+    # literal blocks at 6-space indent. str.format() inserts the value at the
+    # placeholder position; the first line picks up the template's leading
+    # whitespace, but subsequent lines start at column 0 — which would
+    # terminate a YAML literal block. Injecting the indent on every newline
+    # keeps the block intact. The un-indented variant remains for Markdown
+    # templates that want flush-left content.
+    methodology_short_indent6 = methodology_short.replace("\n", "\n      ")
+
     # The "granite_*" key names are kept verbatim because the existing Bob
     # templates reference them as {granite_intro_prose}, etc. The Claude Code
     # and Cursor placeholder templates added in 4.2 use the same names for
     # consistency. Renaming the keys is template-side work, deferred.
     return {
         "project_name": context.project_name,
+        "project_slug": _slugify(context.project_name),
         "stack_name": context.stack_name,
         "generation_date": generation_date,
         "frameworks_list": frameworks_list,
         "dependencies_list": dependencies_list,
         "python_files_count": str(context.python_files_count),
         "methodology_principles_short": methodology_short,
+        "methodology_principles_short_indent6": methodology_short_indent6,
         "methodology_principles_full": methodology_full,
         "methodology_enforcement": methodology_enforcement,
         "granite_intro_prose": intro_prose,
@@ -409,22 +445,41 @@ def _generate_bob_outputs(
     placeholders: dict,
 ) -> list[Path]:
     """
-    Render the six Bob configuration files into <root>/praxis_output/.
+    Render the six Bob configuration files. Five files (reference docs that
+    Bob reads as ordinary markdown) land in <root>/praxis_output/. The sixth
+    file is the actual Bob mode definition and must land at <root>/.bob/
+    custom_modes.yaml — that's where Bob auto-discovers project-scoped modes
+    on startup. Both render passes share the placeholders dict.
     """
-    output_dir = output_root_path / "praxis_output"
-    output_dir.mkdir(parents=True, exist_ok=True)
-
     templates_dir = Path(__file__).parent / "templates" / "bob"
-    template_files = {
+
+    # The five markdown reference files live in praxis_output/.
+    praxis_output_dir = output_root_path / "praxis_output"
+    praxis_output_dir.mkdir(parents=True, exist_ok=True)
+    praxis_output_templates = {
         "AGENTS.md": "AGENTS.md.template",
         "PRAXIS_CONTRACT.md": "PRAXIS_CONTRACT.md.template",
         "python_skill.md": "python_skill.md.template",
         "methodology_skill.md": "methodology_skill.md.template",
         ".bobignore": "bobignore.template",
-        "custom_mode.md": "custom_mode.md.template",
     }
+    paths = _render_template_set(
+        templates_dir, praxis_output_templates, praxis_output_dir, placeholders,
+    )
 
-    return _render_template_set(templates_dir, template_files, output_dir, placeholders)
+    # The Bob mode definition is a YAML file that must live in .bob/ so Bob
+    # auto-discovers it when the project is opened. This is the file that
+    # closes the bootstrap-then-handoff loop introduced in Phase 4-revised.
+    bob_config_dir = output_root_path / ".bob"
+    bob_config_dir.mkdir(parents=True, exist_ok=True)
+    bob_config_templates = {
+        "custom_modes.yaml": "custom_modes.yaml.template",
+    }
+    paths += _render_template_set(
+        templates_dir, bob_config_templates, bob_config_dir, placeholders,
+    )
+
+    return paths
 
 
 def _generate_claude_code_outputs(

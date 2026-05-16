@@ -34,26 +34,30 @@ REPO_ROOT = Path(__file__).parent.parent.resolve()
 
 # Where each target's generated files live, relative to <output_root>.
 # (subdir, set-of-expected-filenames-inside-subdir)
+# Per-target expected outputs. The value is a list of (subdir, files) pairs
+# so a single target can produce files in multiple directories (the Bob target
+# splits across praxis_output/ and .bob/ since the generated mode YAML must
+# live in .bob/ for Bob to auto-discover it on project open).
 EXPECTED_OUTPUTS = {
-    "bob": (
-        Path("praxis_output"),
-        {
-            "AGENTS.md",
-            "PRAXIS_CONTRACT.md",
-            "python_skill.md",
-            "methodology_skill.md",
-            ".bobignore",
-            "custom_mode.md",
-        },
-    ),
-    "claude-code": (
-        Path("."),
-        {"CLAUDE.md"},
-    ),
-    "cursor": (
-        Path(".cursor") / "rules",
-        {"methodology.mdc", "python.mdc"},
-    ),
+    "bob": [
+        (
+            Path("praxis_output"),
+            {
+                "AGENTS.md",
+                "PRAXIS_CONTRACT.md",
+                "python_skill.md",
+                "methodology_skill.md",
+                ".bobignore",
+            },
+        ),
+        (Path(".bob"), {"custom_modes.yaml"}),
+    ],
+    "claude-code": [
+        (Path("."), {"CLAUDE.md"}),
+    ],
+    "cursor": [
+        (Path(".cursor") / "rules", {"methodology.mdc", "python.mdc"}),
+    ],
 }
 
 
@@ -155,11 +159,13 @@ def _spot_check_content(
     target: str,
     target_dir: Path,
     inference: dict,
+    tmpdir: str,
 ) -> None:
     """
     Verify one inference-field-to-output-file claim for the given target.
 
-    For bob, also verifies plan-mode clarifying questions land in AGENTS.md.
+    For bob, also verifies plan-mode clarifying questions land in AGENTS.md
+    AND that the generated .bob/custom_modes.yaml is valid Bob mode YAML.
     """
     if target == "bob":
         agents_md = (target_dir / "AGENTS.md").read_text(encoding="utf-8")
@@ -176,6 +182,43 @@ def _spot_check_content(
             )
             for q in inference["clarifying_questions"]:
                 assert q in agents_md, f"clarifying question not in AGENTS.md: {q}"
+
+        # Validate the new .bob/custom_modes.yaml — Bob mode YAML schema.
+        import yaml
+        bob_yaml_path = Path(tmpdir) / ".bob" / "custom_modes.yaml"
+        assert bob_yaml_path.is_file(), f"missing {bob_yaml_path}"
+        with open(bob_yaml_path, encoding="utf-8") as f:
+            doc = yaml.safe_load(f)
+        assert isinstance(doc, dict), "custom_modes.yaml root must be a mapping"
+        assert "customModes" in doc and isinstance(doc["customModes"], list), (
+            "custom_modes.yaml must have a non-empty customModes list"
+        )
+        assert len(doc["customModes"]) >= 1, "customModes list is empty"
+        entry = doc["customModes"][0]
+        for required_key in (
+            "slug", "name", "roleDefinition", "whenToUse",
+            "groups", "customInstructions",
+        ):
+            assert required_key in entry, (
+                f"custom_modes.yaml missing required key: {required_key}"
+            )
+        # slug must be the slugified project_name — derived from the source
+        # path stem (analyze) or doc filename stem (plan). Both fixtures use
+        # underscores, which slugify rewrites as hyphens.
+        if mode == "analyze":
+            expected_slug = "sample-python-project"
+        else:
+            expected_slug = "sample-planning-doc"
+        assert entry["slug"] == expected_slug, (
+            f"slug mismatch: expected {expected_slug!r}, got {entry['slug']!r}"
+        )
+        # groups must include at least 'read' and 'command'. The generated
+        # mode also includes 'edit' (long-term operating mode writes code);
+        # we check the lower bound to keep the assertion narrow.
+        assert isinstance(entry["groups"], list), "groups must be a list"
+        assert "read" in entry["groups"] and "command" in entry["groups"], (
+            f"groups must contain read+command, got {entry['groups']}"
+        )
 
     elif target == "claude-code":
         claude_md = (target_dir / "CLAUDE.md").read_text(encoding="utf-8")
@@ -237,25 +280,32 @@ def _run_one_target(mode: str, target: str, inference: dict) -> None:
             f"generate mode={mode} target={target} rc={rc}\nstderr:\n{stderr}"
         )
 
-        subdir_rel, expected_files = EXPECTED_OUTPUTS[target]
-        target_dir = Path(tmpdir) / subdir_rel
-        assert target_dir.is_dir(), (
-            f"missing target output dir {target_dir} for target={target}"
-        )
+        # Iterate over each (subdir, expected-files) pair the target produces.
+        # Bob splits its output across two directories; the others use one.
+        total_files = 0
+        subdir_reports = []
+        for subdir_rel, expected_files in EXPECTED_OUTPUTS[target]:
+            target_dir = Path(tmpdir) / subdir_rel
+            assert target_dir.is_dir(), (
+                f"missing target output dir {target_dir} for target={target}"
+            )
+            actual_files = {p.name for p in target_dir.iterdir() if p.is_file()}
+            assert actual_files == expected_files, (
+                f"target={target} subdir={subdir_rel}: "
+                f"expected {expected_files}, got {actual_files}"
+            )
+            total_files += len(actual_files)
+            subdir_label = str(subdir_rel) if str(subdir_rel) != "." else "<root>"
+            subdir_reports.append(f"{len(actual_files)} in {subdir_label}")
 
-        # Compare actual files vs expected (only direct children that are files)
-        actual_files = {p.name for p in target_dir.iterdir() if p.is_file()}
-        assert actual_files == expected_files, (
-            f"target={target}: expected {expected_files}, got {actual_files}"
-        )
+        # Spot-check that inference content landed in the right output file.
+        # The spot-check uses the FIRST subdir as the "primary" target_dir for
+        # backwards-compatible per-target assertions. Bob-target specific
+        # YAML-validity assertions live inside _spot_check_content.
+        primary_dir = Path(tmpdir) / EXPECTED_OUTPUTS[target][0][0]
+        _spot_check_content(mode, target, primary_dir, inference, tmpdir)
 
-        # Spot-check that inference content landed in the right output file
-        _spot_check_content(mode, target, target_dir, inference)
-
-        print(
-            f"  OK: {len(actual_files)} file(s) in "
-            f"{subdir_rel if str(subdir_rel) != '.' else '<root>'}"
-        )
+        print(f"  OK: {total_files} file(s) ({', '.join(subdir_reports)})")
 
 
 def main() -> int:

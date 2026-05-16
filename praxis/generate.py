@@ -1,8 +1,12 @@
 """
 Praxis generation engine.
 
-Assembles templates with detected stack information and Granite-generated
-content to produce tailored Bob IDE configuration files.
+Assembles templates with detected stack information and host-agent-provided
+prose content to produce tailored Bob IDE configuration files.
+
+Phase 4-revised: this module is now a pure templating engine. The host agent
+(Bob, or any compatible orchestrator) supplies the inference output via the
+GenerationContext; this module does no LLM calls of its own.
 """
 
 from dataclasses import dataclass, field
@@ -10,15 +14,14 @@ from pathlib import Path
 from datetime import datetime, timezone
 
 from praxis.detect import StackInfo
-from praxis.plan import PlanInfo
-from praxis.granite import generate as granite_generate
 from praxis.methodology import METHODOLOGY_PRINCIPLES
 
 
 __all__ = [
     "generate_outputs",
     "_stack_info_to_context",
-    "_plan_info_to_context",
+    "_read_project_readme",
+    "_sanitize_inference_output",
     "GenerationContext",
 ]
 
@@ -27,44 +30,54 @@ __all__ = [
 class GenerationContext:
     """
     Unified input for the generation engine.
-    
-    Both StackInfo (analyze mode) and PlanInfo (plan mode) are adapted into
-    this shape. Templates only see GenerationContext, not the source type.
+
+    Built from StackInfo (analyze mode) or directly from the Phase 2 JSON
+    blob (plan mode). The three inference fields (intro_prose, skill_content,
+    agents_context) are filled by the host agent via Phase 1's bob_inference
+    output, never by code inside this module.
     """
     project_name: str
     stack_name: str  # "Python" or "Generic"
     frameworks: list[str] = field(default_factory=list)
-    
+
     # Analyze-mode fields (empty for plan mode)
     dependencies: list[str] = field(default_factory=list)
     python_files_count: int = 0
-    
+
     # Plan-mode fields (empty for analyze mode)
     project_purpose: str = ""
     features: list[str] = field(default_factory=list)
     integrations: list[str] = field(default_factory=list)
     clarifying_questions: list[str] = field(default_factory=list)
-    
-    # Grounding context for Granite prompts (README for analyze, source doc for plan)
+
+    # Grounding context (README for analyze, source doc excerpt for plan)
     grounding_context: str = ""
     grounding_source_label: str = ""  # "README" or "planning document"
-    
+
     # Mode flag for template branching
     mode: str = "analyze"  # "analyze" or "plan"
 
+    # Host-agent-provided inference fields (filled by generate_command in cli.py
+    # from the bob_inference JSON sub-object). Empty defaults let templates
+    # render with placeholders if a caller skips Phase 1.
+    intro_prose: str = ""
+    skill_content: str = ""
+    agents_context: str = ""
 
-def _sanitize_granite_output(text: str) -> str:
+
+def _sanitize_inference_output(text: str) -> str:
     """
-    Strip common Granite output noise before insertion into templates.
+    Strip common host-agent output artifacts before insertion into templates.
 
     Removes instruction-echo preambles ("Remember to...", "Output only...",
-    "Sure,...", etc.) and stray trailing quotes that don't match an opening
-    quote. Prevents Granite's occasional artifacts from leaking into the
-    final rendered documents.
+    "Sure,...", etc.), wrapping code fences, outer wrapping quotes, and orphan
+    trailing quotes. Originally written for IBM Granite's failure modes; kept
+    as a defensive safety net for Bob's output too. May be removed in a later
+    sub-task if Bob's output is reliably clean.
     """
     text = text.strip()
 
-    # Strip wrapping code fences (Granite sometimes wraps prose in ```...```)
+    # Strip wrapping code fences (the host agent sometimes wraps prose in ```...```)
     if text.startswith("```"):
         # Skip the opening fence line (which may have a language tag like ```python)
         first_newline = text.find("\n")
@@ -90,10 +103,10 @@ def _sanitize_granite_output(text: str) -> str:
         lines = lines[1:]
     text = "\n".join(lines).strip()
 
-    # Strip outer wrapping quotes if Granite wrapped the entire output
-    # in matched double quotes. Safety check: don't strip if removing the
-    # outer pair would expose another quote, which would mean we're
-    # mangling legitimate nested quotation marks.
+    # Strip outer wrapping quotes if the host agent wrapped the entire output
+    # in matched double quotes. Safety check: don't strip if removing the outer
+    # pair would expose another quote, which would mean we're mangling
+    # legitimate nested quotation marks.
     if (
         len(text) >= 2
         and text.startswith('"')
@@ -113,7 +126,7 @@ def _sanitize_granite_output(text: str) -> str:
 
 
 def _format_frameworks_list(frameworks: list[str]) -> str:
-    """Format frameworks list for display."""
+    """Format frameworks list for display in templates."""
     if not frameworks:
         return "none detected"
     return ", ".join(frameworks)
@@ -123,10 +136,10 @@ def _format_dependencies_list(dependencies: list[str]) -> str:
     """Format dependencies list for display, truncating if too long."""
     if not dependencies:
         return "none detected"
-    
+
     if len(dependencies) <= 10:
         return ", ".join(dependencies)
-    
+
     # Truncate to first 10 and add count
     truncated = ", ".join(dependencies[:10])
     remaining = len(dependencies) - 10
@@ -164,9 +177,9 @@ def _generate_framework_notes(frameworks: list[str]) -> str:
     """Generate framework-specific notes for python_skill.md."""
     if not frameworks:
         return "No frameworks detected. This appears to be a general-purpose Python project."
-    
+
     notes = []
-    
+
     if "Flask" in frameworks:
         notes.append("""
 ### Flask
@@ -176,7 +189,7 @@ def _generate_framework_notes(frameworks: list[str]) -> str:
 - Use Flask's `current_app` for accessing app context
 - Test routes using Flask's test client
 """)
-    
+
     if "FastAPI" in frameworks:
         notes.append("""
 ### FastAPI
@@ -186,7 +199,7 @@ def _generate_framework_notes(frameworks: list[str]) -> str:
 - Use async/await for I/O-bound operations
 - Document endpoints with docstrings (auto-generates OpenAPI docs)
 """)
-    
+
     if "Django" in frameworks:
         notes.append("""
 ### Django
@@ -196,7 +209,7 @@ def _generate_framework_notes(frameworks: list[str]) -> str:
 - Leverage Django's built-in admin interface
 - Use Django's migration system for schema changes
 """)
-    
+
     if "pytest" in frameworks:
         notes.append("""
 ### pytest
@@ -206,7 +219,7 @@ def _generate_framework_notes(frameworks: list[str]) -> str:
 - Use descriptive test names: `test_<function>_<scenario>_<expected>`
 - Run tests with: `pytest -v`
 """)
-    
+
     if "pandas" in frameworks or "numpy" in frameworks:
         notes.append("""
 ### Data Science (pandas/numpy)
@@ -216,20 +229,22 @@ def _generate_framework_notes(frameworks: list[str]) -> str:
 - Use meaningful column names and document data schemas
 - Validate data types and ranges before processing
 """)
-    
+
     return "\n".join(notes) if notes else "No specific framework guidance available."
+
 
 def _read_project_readme(project_path: Path, max_chars: int = 1500) -> str:
     """
-    Read the project's README.md if it exists, returning a truncated excerpt.
-    
-    Provides grounding context for Granite prose generation so the model
-    doesn't hallucinate the project's purpose from the name alone.
-    
+    Read the project's README if one exists, returning a truncated excerpt.
+
+    Used by inference_prompts.build_analyze_prompt to ground the host agent's
+    response in real project documentation rather than letting it hallucinate
+    from the project name alone.
+
     Args:
         project_path: Path to the project directory
         max_chars: Maximum characters to return (default: 1500)
-        
+
     Returns:
         Truncated README content, or empty string if no README found
     """
@@ -247,12 +262,17 @@ def _read_project_readme(project_path: Path, max_chars: int = 1500) -> str:
                 return content
             except (OSError, UnicodeDecodeError):
                 continue
-    
+
     return ""
 
 
 def _stack_info_to_context(stack_info: StackInfo, project_path: Path) -> GenerationContext:
-    """Adapt StackInfo (analyze mode) into a GenerationContext."""
+    """
+    Adapt a StackInfo (analyze mode) into a GenerationContext.
+
+    Does NOT fill the inference fields (intro_prose, skill_content,
+    agents_context) — those come from the host agent via Phase 2.
+    """
     return GenerationContext(
         project_name=project_path.name,
         stack_name=stack_info.stack_name,
@@ -265,55 +285,40 @@ def _stack_info_to_context(stack_info: StackInfo, project_path: Path) -> Generat
     )
 
 
-def _plan_info_to_context(plan_info: PlanInfo, doc_path: Path) -> GenerationContext:
-    """Adapt PlanInfo (plan mode) into a GenerationContext."""
-    # Use the doc's filename (without extension) as project_name, since
-    # there's no project directory yet
-    project_name = doc_path.stem
-    
-    return GenerationContext(
-        project_name=project_name,
-        stack_name=plan_info.inferred_stack,
-        frameworks=plan_info.inferred_frameworks,
-        project_purpose=plan_info.project_purpose,
-        features=plan_info.features,
-        integrations=plan_info.integrations,
-        clarifying_questions=plan_info.clarifying_questions,
-        grounding_context=plan_info.source_doc_excerpt,
-        grounding_source_label="planning document",
-        mode="plan",
-    )
-
-
 def generate_outputs(
     output_root_path: Path,
     context: GenerationContext,
 ) -> list[Path]:
     """
-    Generate Bob IDE configuration files from a GenerationContext.
-    
+    Generate Bob IDE configuration files from a fully-populated GenerationContext.
+
+    Pure templating: this function performs no LLM calls. All host-agent
+    content must already be present on the context (intro_prose, skill_content,
+    agents_context). The caller (typically cli.py::generate_command) is
+    responsible for populating those from the Phase 1 bob_inference JSON.
+
     Args:
         output_root_path: Directory where praxis_output/ will be created
-        context: Unified context (from either StackInfo or PlanInfo)
-    
+        context: Unified context (analyze or plan mode) with inference fields filled
+
     Returns:
         List of paths to generated output files
-    
+
     Raises:
-        NotImplementedError: If stack is not Python (Phase 1 limitation)
+        NotImplementedError: If stack is not Python (v1 limitation)
         OSError: If template files cannot be read or output cannot be written
     """
-    # Phase 1 limitation: only Python stack supported
+    # v1 limitation: only Python stack supported
     if context.stack_name != "Python":
         raise NotImplementedError(
-            f"Only Python stack is supported in Phase 1. "
+            f"Only Python stack is supported in v1. "
             f"Detected stack: {context.stack_name}"
         )
-    
+
     # Determine output directory
     output_dir = output_root_path / "praxis_output"
     output_dir.mkdir(exist_ok=True)
-    
+
     # Load templates
     templates_dir = Path(__file__).parent / "templates"
     templates = {}
@@ -325,111 +330,34 @@ def generate_outputs(
         ".bobignore": "bobignore.template",
         "custom_mode.md": "custom_mode.md.template",
     }
-    
+
     for output_name, template_name in template_files.items():
         template_path = templates_dir / template_name
         with open(template_path, "r", encoding="utf-8") as f:
             templates[output_name] = f.read()
-    
+
     # Prepare common placeholders
     project_name = context.project_name
     generation_date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     frameworks_list = _format_frameworks_list(context.frameworks)
     dependencies_list = _format_dependencies_list(context.dependencies)
-    
+
     # Render methodology in three forms
     methodology_short = _render_methodology_short()
     methodology_full = _render_methodology_full()
     methodology_enforcement = _render_methodology_enforcement()
-    
+
     # Generate framework-specific notes
     framework_notes = _generate_framework_notes(context.frameworks)
-    
-    # Build grounding context block (works for both README and planning doc)
-    if context.grounding_context:
-        if context.mode == "plan":
-            grounding_block = (
-                f"\n\nThis is a planning document for a project that doesn't yet exist. "
-                f"Use it as ground truth for what the project will do.\n"
-                f"Planning document excerpt:\n---\n{context.grounding_context}\n---"
-            )
-        else:
-            grounding_block = (
-                f"\n\nProject {context.grounding_source_label} excerpt (use this as ground "
-                f"truth about what the project actually does — do not invent a different "
-                f"purpose):\n---\n{context.grounding_context}\n---"
-            )
-    else:
-        grounding_block = (
-            f"\n\nNo {context.grounding_source_label} available. Describe the project "
-            f"conservatively based only on its name, stack, and frameworks. Do not invent."
-        )
-    
-    # Shared tone constraint for all prose-generation prompts
-    tone_rules = (
-        "Tone rules: plain, direct prose. No corporate language. Do not use phrases "
-        "like 'embark on', 'forge a partnership', 'shape the future', 'exceed "
-        "expectations', 'ambitious endeavor', 'cutting-edge', 'leveraging', "
-        "'pioneering'. Sound like a competent engineer briefing a coworker, not a "
-        "CEO opening a keynote."
-    )
-    
-    # Plan-mode specific additions for Granite prompts
-    if context.mode == "plan":
-        plan_extras = (
-            f"\nDetected features: {', '.join(context.features) if context.features else 'none specified'}. "
-            f"Detected integrations: {', '.join(context.integrations) if context.integrations else 'none specified'}."
-        )
-    else:
-        plan_extras = ""
-    
-    # Make Granite calls for content generation
-    print("  Calling Granite for PRAXIS_CONTRACT.md introduction...")
-    granite_intro_prompt = (
-        f"Write EXACTLY ONE response containing 2 short paragraphs (4-5 sentences total) "
-        f"introducing how Bob (an AI development partner) will work on the '{project_name}' project. "
-        f"Do not provide multiple versions. Do not duplicate the response. "
-        f"Stack: {context.stack_name}. Detected frameworks: {frameworks_list}. "
-        f"Detected dependencies: {dependencies_list}.{plan_extras}\n\n"
-        f"Address Bob in second person. Mention the detected frameworks or "
-        f"dependencies concretely. Focus on what Bob's collaboration will involve "
-        f"day-to-day, not abstract goals.\n\n"
-        f"{tone_rules}"
-        f"{grounding_block}\n\n"
-        f"Output only the prose. No headers, no meta-commentary, no 'Dear Bob' "
-        f"salutation, no signature."
-    )
-    granite_intro_prose = _sanitize_granite_output(granite_generate(granite_intro_prompt, max_tokens=300))
-    
-    print("  Calling Granite for python_skill.md best practices...")
-    granite_skill_prompt = (
-        f"Write EXACTLY ONE response with Python development best practices tailored to a project using these "
-        f"Do not provide multiple versions. Do not duplicate bullets. "
-        f"frameworks: {frameworks_list}. Detected dependencies: {dependencies_list}. "
-        f"Output 5-8 bullet points covering Python-specific conventions relevant to "
-        f"this exact dependency set. "
-        f"If pytest is detected, include a bullet about test conventions. "
-        f"If Flask or FastAPI is detected, include a bullet about web framework patterns. "
-        f"If pandas/numpy is detected, include a bullet about data handling. "
-        f"Output ONLY the bullet points, no preamble, no header, no closing."
-    )
-    granite_skill_content = _sanitize_granite_output(granite_generate(granite_skill_prompt, max_tokens=400))
-    
-    print("  Calling Granite for AGENTS.md project context...")
-    granite_agents_prompt = (
-        f"Write EXACTLY ONE response: a brief 2-3 sentence factual description of the '{project_name}' "
-        f"Do not provide multiple versions. Do not preface with 'Description:' or similar. "
-        f"project for an AI development partner to read at session start. "
-        f"Stack: {context.stack_name}. Detected frameworks: {frameworks_list}.\n\n"
-        f"The description should answer: what does this project do? Be specific and "
-        f"factual. If you don't know what the project does, say so plainly instead "
-        f"of inventing a purpose.\n\n"
-        f"{tone_rules}"
-        f"{grounding_block}\n\n"
-        f"Output ONLY the description prose, no headers or meta-commentary."
-    )
-    granite_agents_context = _sanitize_granite_output(granite_generate(granite_agents_prompt, max_tokens=150))
-    
+
+    # Sanitize the host-agent-provided fields before they hit the templates.
+    # The sanitizer was originally written for Granite; kept as a safety net
+    # because Bob output may exhibit similar artifacts (wrapping fences,
+    # instruction echoes, stray quotes).
+    intro_prose = _sanitize_inference_output(context.intro_prose)
+    skill_content = _sanitize_inference_output(context.skill_content)
+    agents_context = _sanitize_inference_output(context.agents_context)
+
     # Build clarifying questions block for plan mode
     if context.mode == "plan" and context.clarifying_questions:
         clarifying_questions_block = "\n## Open Questions for the Developer\n\nThe planning document didn't specify these. Ask the developer at session start:\n\n"
@@ -437,8 +365,11 @@ def generate_outputs(
             clarifying_questions_block += f"- {q}\n"
     else:
         clarifying_questions_block = ""
-    
-    # Build placeholder dictionary
+
+    # Build placeholder dictionary. The "granite_*" key names are kept verbatim
+    # because the template files still reference them as {granite_intro_prose},
+    # etc. Renaming the placeholders is template work, deferred to a later
+    # sub-task per the Phase 4-revised constraints.
     placeholders = {
         "project_name": project_name,
         "stack_name": context.stack_name,
@@ -449,23 +380,22 @@ def generate_outputs(
         "methodology_principles_short": methodology_short,
         "methodology_principles_full": methodology_full,
         "methodology_enforcement": methodology_enforcement,
-        "granite_intro_prose": granite_intro_prose.strip(),
-        "granite_skill_content": granite_skill_content.strip(),
-        "granite_agents_context": granite_agents_context.strip(),
+        "granite_intro_prose": intro_prose,
+        "granite_skill_content": skill_content,
+        "granite_agents_context": agents_context,
         "framework_specific_notes": framework_notes,
         "clarifying_questions_block": clarifying_questions_block,
     }
-    
+
     # Render and write all templates
     output_paths = []
     for output_name, template_content in templates.items():
         rendered = template_content.format(**placeholders)
         output_path = output_dir / output_name
-        
+
         with open(output_path, "w", encoding="utf-8") as f:
             f.write(rendered)
-        
-        output_paths.append(output_path)
-    
-    return output_paths
 
+        output_paths.append(output_path)
+
+    return output_paths

@@ -1,6 +1,13 @@
-certifi==2026.4.22
-charset-normalizer==3.4.7
-idna==3.15
-python-dotenv==1.2.2
-requests==2.34.2
-urllib3==2.7.0
+# Praxis runtime dependencies.
+#
+# Phase 4-revised: watsonx.ai was removed; the CLI is now a pure templating
+# engine that does no LLM calls of its own. Inference is delegated to the host
+# agent (Bob) via the two-phase handshake (see praxis/cli.py and
+# praxis/inference_prompts.py).
+#
+# All other functionality uses only the Python standard library:
+#   - argparse, json, pathlib, dataclasses, datetime  (stdlib)
+#   - tomllib (stdlib, Python 3.11+)
+#   - subprocess, tempfile (stdlib, used in tests)
+#
+# Required runtime dependencies: NONE.

@@ -1,0 +1,11 @@
+---
+description: Praxis methodology principles for {project_name}
+globs:
+alwaysApply: true
+---
+
+# Methodology principles
+
+{methodology_principles_short}
+
+{clarifying_questions_block}

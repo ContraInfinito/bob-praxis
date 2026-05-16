@@ -1,0 +1,9 @@
+---
+description: Python conventions for {project_name}
+globs: **/*.py
+alwaysApply: false
+---
+
+# Python conventions
+
+{granite_skill_content}

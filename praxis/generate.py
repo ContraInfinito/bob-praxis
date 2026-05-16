@@ -2,11 +2,21 @@
 Praxis generation engine.
 
 Assembles templates with detected stack information and host-agent-provided
-prose content to produce tailored Bob IDE configuration files.
+prose content to produce tailored configuration files for one of three
+supported targets:
 
-Phase 4-revised: this module is now a pure templating engine. The host agent
-(Bob, or any compatible orchestrator) supplies the inference output via the
+  - bob          → <root>/praxis_output/ (six files)
+  - claude-code  → <root>/CLAUDE.md
+  - cursor       → <root>/.cursor/rules/{methodology,python}.mdc
+
+Phase 4-revised: this module is a pure templating engine. The host agent (Bob,
+or any compatible orchestrator) supplies the inference output via the
 GenerationContext; this module does no LLM calls of its own.
+
+Sub-task 4.2: multi-target dispatch. The same GenerationContext can be
+rendered against any of the three target template families. Templates live in
+``praxis/templates/<target>/`` and each target has its own idiomatic output
+location.
 """
 
 from dataclasses import dataclass, field
@@ -23,7 +33,13 @@ __all__ = [
     "_read_project_readme",
     "_sanitize_inference_output",
     "GenerationContext",
+    "ALLOWED_TARGETS",
 ]
+
+
+# Targets the engine knows how to render for. Sub-tasks 4.3 / 4.4 fill in the
+# claude-code and cursor template content; this sub-task wires the dispatch.
+ALLOWED_TARGETS = ("bob", "claude-code", "cursor")
 
 
 @dataclass
@@ -63,6 +79,10 @@ class GenerationContext:
     intro_prose: str = ""
     skill_content: str = ""
     agents_context: str = ""
+
+    # Output target: which configuration family to render. Phase 1 stamps this
+    # into partial_context/meta so Phase 2 honors what Phase 1 was told.
+    target: str = "bob"  # "bob" | "claude-code" | "cursor"
 
 
 def _sanitize_inference_output(text: str) -> str:
@@ -266,12 +286,21 @@ def _read_project_readme(project_path: Path, max_chars: int = 1500) -> str:
     return ""
 
 
-def _stack_info_to_context(stack_info: StackInfo, project_path: Path) -> GenerationContext:
+def _stack_info_to_context(
+    stack_info: StackInfo,
+    project_path: Path,
+    target: str = "bob",
+) -> GenerationContext:
     """
     Adapt a StackInfo (analyze mode) into a GenerationContext.
 
     Does NOT fill the inference fields (intro_prose, skill_content,
     agents_context) — those come from the host agent via Phase 2.
+
+    Args:
+        stack_info: Result of praxis.detect.detect_stack()
+        project_path: Path to the analyzed project
+        target: Output target ("bob", "claude-code", or "cursor")
     """
     return GenerationContext(
         project_name=project_path.name,
@@ -282,96 +311,51 @@ def _stack_info_to_context(stack_info: StackInfo, project_path: Path) -> Generat
         grounding_context=_read_project_readme(project_path),
         grounding_source_label="README",
         mode="analyze",
+        target=target,
     )
 
 
-def generate_outputs(
-    output_root_path: Path,
-    context: GenerationContext,
-) -> list[Path]:
+def _build_placeholders(context: GenerationContext) -> dict:
     """
-    Generate Bob IDE configuration files from a fully-populated GenerationContext.
+    Build the shared placeholders dict used by all per-target templates.
 
-    Pure templating: this function performs no LLM calls. All host-agent
-    content must already be present on the context (intro_prose, skill_content,
-    agents_context). The caller (typically cli.py::generate_command) is
-    responsible for populating those from the Phase 1 bob_inference JSON.
-
-    Args:
-        output_root_path: Directory where praxis_output/ will be created
-        context: Unified context (analyze or plan mode) with inference fields filled
-
-    Returns:
-        List of paths to generated output files
-
-    Raises:
-        NotImplementedError: If stack is not Python (v1 limitation)
-        OSError: If template files cannot be read or output cannot be written
+    Same field set for every target. Each target's template references the
+    subset it cares about; Python's str.format() ignores unused keys, so
+    extra fields here are harmless.
     """
-    # v1 limitation: only Python stack supported
-    if context.stack_name != "Python":
-        raise NotImplementedError(
-            f"Only Python stack is supported in v1. "
-            f"Detected stack: {context.stack_name}"
-        )
-
-    # Determine output directory
-    output_dir = output_root_path / "praxis_output"
-    output_dir.mkdir(exist_ok=True)
-
-    # Load templates
-    templates_dir = Path(__file__).parent / "templates"
-    templates = {}
-    template_files = {
-        "AGENTS.md": "AGENTS.md.template",
-        "PRAXIS_CONTRACT.md": "PRAXIS_CONTRACT.md.template",
-        "python_skill.md": "python_skill.md.template",
-        "methodology_skill.md": "methodology_skill.md.template",
-        ".bobignore": "bobignore.template",
-        "custom_mode.md": "custom_mode.md.template",
-    }
-
-    for output_name, template_name in template_files.items():
-        template_path = templates_dir / template_name
-        with open(template_path, "r", encoding="utf-8") as f:
-            templates[output_name] = f.read()
-
-    # Prepare common placeholders
-    project_name = context.project_name
     generation_date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     frameworks_list = _format_frameworks_list(context.frameworks)
     dependencies_list = _format_dependencies_list(context.dependencies)
 
-    # Render methodology in three forms
     methodology_short = _render_methodology_short()
     methodology_full = _render_methodology_full()
     methodology_enforcement = _render_methodology_enforcement()
 
-    # Generate framework-specific notes
     framework_notes = _generate_framework_notes(context.frameworks)
 
     # Sanitize the host-agent-provided fields before they hit the templates.
-    # The sanitizer was originally written for Granite; kept as a safety net
-    # because Bob output may exhibit similar artifacts (wrapping fences,
-    # instruction echoes, stray quotes).
     intro_prose = _sanitize_inference_output(context.intro_prose)
     skill_content = _sanitize_inference_output(context.skill_content)
     agents_context = _sanitize_inference_output(context.agents_context)
 
     # Build clarifying questions block for plan mode
     if context.mode == "plan" and context.clarifying_questions:
-        clarifying_questions_block = "\n## Open Questions for the Developer\n\nThe planning document didn't specify these. Ask the developer at session start:\n\n"
+        clarifying_questions_block = (
+            "\n## Open Questions for the Developer\n\n"
+            "The planning document didn't specify these. Ask the developer at "
+            "session start:\n\n"
+        )
         for q in context.clarifying_questions:
             clarifying_questions_block += f"- {q}\n"
     else:
         clarifying_questions_block = ""
 
-    # Build placeholder dictionary. The "granite_*" key names are kept verbatim
-    # because the template files still reference them as {granite_intro_prose},
-    # etc. Renaming the placeholders is template work, deferred to a later
-    # sub-task per the Phase 4-revised constraints.
-    placeholders = {
-        "project_name": project_name,
+    # The "granite_*" key names are kept verbatim because the existing Bob
+    # templates reference them as {granite_intro_prose}, etc. The Claude Code
+    # and Cursor placeholder templates added in 4.2 use the same names for
+    # consistency. Renaming the keys is template-side work, deferred.
+    return {
+        "project_name": context.project_name,
         "stack_name": context.stack_name,
         "generation_date": generation_date,
         "frameworks_list": frameworks_list,
@@ -387,15 +371,160 @@ def generate_outputs(
         "clarifying_questions_block": clarifying_questions_block,
     }
 
-    # Render and write all templates
-    output_paths = []
-    for output_name, template_content in templates.items():
-        rendered = template_content.format(**placeholders)
-        output_path = output_dir / output_name
 
+def _render_template_set(
+    templates_dir: Path,
+    template_files: dict,
+    output_dir: Path,
+    placeholders: dict,
+) -> list[Path]:
+    """
+    Load each template file, render with placeholders, write to output_dir.
+
+    Args:
+        templates_dir: Directory holding the .template source files
+        template_files: Mapping of {output_filename: template_filename}
+        output_dir: Directory to write the rendered files into
+        placeholders: Substitution map for str.format()
+
+    Returns:
+        List of output file paths actually written, in template_files order.
+    """
+    output_paths = []
+    for output_name, template_name in template_files.items():
+        template_path = templates_dir / template_name
+        with open(template_path, "r", encoding="utf-8") as f:
+            content = f.read()
+        rendered = content.format(**placeholders)
+        output_path = output_dir / output_name
         with open(output_path, "w", encoding="utf-8") as f:
             f.write(rendered)
-
         output_paths.append(output_path)
-
     return output_paths
+
+
+def _generate_bob_outputs(
+    output_root_path: Path,
+    context: GenerationContext,
+    placeholders: dict,
+) -> list[Path]:
+    """
+    Render the six Bob configuration files into <root>/praxis_output/.
+    """
+    output_dir = output_root_path / "praxis_output"
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    templates_dir = Path(__file__).parent / "templates" / "bob"
+    template_files = {
+        "AGENTS.md": "AGENTS.md.template",
+        "PRAXIS_CONTRACT.md": "PRAXIS_CONTRACT.md.template",
+        "python_skill.md": "python_skill.md.template",
+        "methodology_skill.md": "methodology_skill.md.template",
+        ".bobignore": "bobignore.template",
+        "custom_mode.md": "custom_mode.md.template",
+    }
+
+    return _render_template_set(templates_dir, template_files, output_dir, placeholders)
+
+
+def _generate_claude_code_outputs(
+    output_root_path: Path,
+    context: GenerationContext,
+    placeholders: dict,
+) -> list[Path]:
+    """
+    Render the single Claude Code CLAUDE.md into <root>/.
+
+    Claude Code reads CLAUDE.md from the project root, so we write directly
+    to output_root_path without a praxis_output/ subdirectory.
+    """
+    output_dir = output_root_path
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    templates_dir = Path(__file__).parent / "templates" / "claude_code"
+    template_files = {
+        "CLAUDE.md": "CLAUDE.md.template",
+    }
+
+    return _render_template_set(templates_dir, template_files, output_dir, placeholders)
+
+
+def _generate_cursor_outputs(
+    output_root_path: Path,
+    context: GenerationContext,
+    placeholders: dict,
+) -> list[Path]:
+    """
+    Render the two Cursor rule files into <root>/.cursor/rules/.
+
+    Cursor reads rules from .cursor/rules/, so we create that nested directory
+    under output_root_path if it doesn't exist.
+    """
+    output_dir = output_root_path / ".cursor" / "rules"
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    templates_dir = Path(__file__).parent / "templates" / "cursor"
+    template_files = {
+        "methodology.mdc": "methodology.mdc.template",
+        "python.mdc": "python.mdc.template",
+    }
+
+    return _render_template_set(templates_dir, template_files, output_dir, placeholders)
+
+
+def generate_outputs(
+    output_root_path: Path,
+    context: GenerationContext,
+) -> list[Path]:
+    """
+    Generate target-specific configuration files from a fully-populated context.
+
+    Pure templating: this function performs no LLM calls. All host-agent
+    content must already be present on the context (intro_prose, skill_content,
+    agents_context). The caller (typically cli.py::generate_command) is
+    responsible for populating those from the Phase 1 bob_inference JSON.
+
+    Dispatches on context.target:
+      - "bob"         → <root>/praxis_output/ (6 files)
+      - "claude-code" → <root>/CLAUDE.md (1 file)
+      - "cursor"      → <root>/.cursor/rules/*.mdc (2 files)
+
+    Args:
+        output_root_path: Directory under which the target's files are written
+        context: Unified context with target, mode, and inference fields filled
+
+    Returns:
+        List of paths to generated output files
+
+    Raises:
+        ValueError: If context.target is not one of ALLOWED_TARGETS
+        NotImplementedError: If stack is not Python (v1 limitation)
+        OSError: If template files cannot be read or output cannot be written
+    """
+    # Validate target up front so the failure mode is clear
+    if context.target not in ALLOWED_TARGETS:
+        raise ValueError(
+            f"Unsupported target: {context.target!r}. "
+            f"Allowed: {list(ALLOWED_TARGETS)}"
+        )
+
+    # v1 limitation: only Python stack supported
+    if context.stack_name != "Python":
+        raise NotImplementedError(
+            f"Only Python stack is supported in v1. "
+            f"Detected stack: {context.stack_name}"
+        )
+
+    # Build the shared placeholders dict once; pass to whichever per-target
+    # renderer applies.
+    placeholders = _build_placeholders(context)
+
+    if context.target == "bob":
+        return _generate_bob_outputs(output_root_path, context, placeholders)
+    elif context.target == "claude-code":
+        return _generate_claude_code_outputs(output_root_path, context, placeholders)
+    elif context.target == "cursor":
+        return _generate_cursor_outputs(output_root_path, context, placeholders)
+    else:
+        # Defensive: should be unreachable thanks to the validation above
+        raise ValueError(f"Unsupported target: {context.target!r}")

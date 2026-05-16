@@ -15,7 +15,7 @@ agent's JSON answer (bob_inference) and renders the Praxis output files.
 from pathlib import Path
 
 from praxis.detect import StackInfo
-from praxis.generate import _read_project_readme
+from praxis.generate import ALLOWED_TARGETS, _read_project_readme
 
 
 __all__ = ["build_analyze_prompt", "build_plan_prompt"]
@@ -30,6 +30,25 @@ _TONE_RULES = (
     "'pioneering'. Sound like a competent engineer briefing a coworker, not a "
     "CEO opening a keynote."
 )
+
+
+# Maps the --target value to the human-readable agent name woven into the
+# prompt opener. The host agent (Bob, doing inference) is always Bob — the
+# target only affects which output files get generated, not who's reading
+# the bootstrap prompt. The intro_prose still addresses "Bob, ..." regardless.
+_AGENT_DISPLAY_NAMES = {
+    "bob": "Bob IDE",
+    "claude-code": "Claude Code",
+    "cursor": "Cursor",
+}
+
+
+def _validate_target(target: str) -> None:
+    """Raise ValueError if target is not one of the supported output targets."""
+    if target not in ALLOWED_TARGETS:
+        raise ValueError(
+            f"Unsupported target: {target!r}. Allowed: {list(ALLOWED_TARGETS)}"
+        )
 
 
 def _frameworks_for_prompt(frameworks: list[str]) -> str:
@@ -49,7 +68,11 @@ def _dependencies_for_prompt(dependencies: list[str]) -> str:
     return ", ".join(dependencies)
 
 
-def build_analyze_prompt(stack_info: StackInfo, project_path: Path) -> dict:
+def build_analyze_prompt(
+    stack_info: StackInfo,
+    project_path: Path,
+    target: str = "bob",
+) -> dict:
     """
     Build the Phase 1 prompt for analyze mode.
 
@@ -60,10 +83,19 @@ def build_analyze_prompt(stack_info: StackInfo, project_path: Path) -> dict:
     Args:
         stack_info: Result of praxis.detect.detect_stack()
         project_path: Path to the project directory being analyzed
+        target: Output target ("bob", "claude-code", or "cursor"). Affects
+            the opener of prompt_for_bob and is stamped into partial_context
+            + meta so Phase 2 honors what Phase 1 was told.
 
     Returns:
         Dict with keys: prompt_for_bob, partial_context, meta
+
+    Raises:
+        ValueError: If target is not one of the supported output targets.
     """
+    _validate_target(target)
+    agent_display_name = _AGENT_DISPLAY_NAMES[target]
+
     project_name = project_path.name
     frameworks_str = _frameworks_for_prompt(stack_info.frameworks)
     dependencies_str = _dependencies_for_prompt(stack_info.dependencies)
@@ -83,9 +115,9 @@ def build_analyze_prompt(stack_info: StackInfo, project_path: Path) -> dict:
         )
 
     prompt_for_bob = (
-        f"You are helping bootstrap Bob IDE configuration for an existing codebase "
-        f"via the Praxis methodology-transfer tool. Read the project context below "
-        f"and return a JSON object with three string fields.\n\n"
+        f"You are helping bootstrap configuration for {agent_display_name} on an "
+        f"existing codebase via the Praxis methodology-transfer tool. Read the "
+        f"project context below and return a JSON object with three string fields.\n\n"
         f"PROJECT CONTEXT:\n"
         f"- Project name: {project_name}\n"
         f"- Stack: {stack_info.stack_name}\n"
@@ -124,12 +156,14 @@ def build_analyze_prompt(stack_info: StackInfo, project_path: Path) -> dict:
         "grounding_context": readme_excerpt,
         "grounding_source_label": "README",
         "mode": "analyze",
+        "target": target,
     }
 
     meta = {
         "schema_version": "1.0",
         "mode": "analyze",
         "path": str(project_path),
+        "target": target,
     }
 
     return {
@@ -139,7 +173,11 @@ def build_analyze_prompt(stack_info: StackInfo, project_path: Path) -> dict:
     }
 
 
-def build_plan_prompt(doc_path: Path, doc_content: str) -> dict:
+def build_plan_prompt(
+    doc_path: Path,
+    doc_content: str,
+    target: str = "bob",
+) -> dict:
     """
     Build the Phase 1 prompt for plan mode.
 
@@ -152,10 +190,19 @@ def build_plan_prompt(doc_path: Path, doc_content: str) -> dict:
     Args:
         doc_path: Path to the planning document (.md / .markdown / .txt)
         doc_content: Already-read document content (caller handles encoding)
+        target: Output target ("bob", "claude-code", or "cursor"). Affects
+            the opener of prompt_for_bob and is stamped into partial_context
+            + meta so Phase 2 honors what Phase 1 was told.
 
     Returns:
         Dict with keys: prompt_for_bob, partial_context, meta
+
+    Raises:
+        ValueError: If target is not one of the supported output targets.
     """
+    _validate_target(target)
+    agent_display_name = _AGENT_DISPLAY_NAMES[target]
+
     project_name = doc_path.stem
 
     # Cap document content for the prompt — long docs waste host-agent context
@@ -169,11 +216,11 @@ def build_plan_prompt(doc_path: Path, doc_content: str) -> dict:
     doc_excerpt = doc_content[:1500]
 
     prompt_for_bob = (
-        f"You are helping bootstrap Bob IDE configuration from a planning document "
-        f"via the Praxis methodology-transfer tool. Read the planning document "
-        f"below and return a JSON object describing the planned project AND "
-        f"providing the prose content for Praxis's output files. The project "
-        f"doesn't yet exist — the document is the only source of truth.\n\n"
+        f"You are helping bootstrap configuration for {agent_display_name} from a "
+        f"planning document via the Praxis methodology-transfer tool. Read the "
+        f"planning document below and return a JSON object describing the planned "
+        f"project AND providing the prose content for Praxis's output files. The "
+        f"project doesn't yet exist — the document is the only source of truth.\n\n"
         f"PROJECT METADATA:\n"
         f"- Project name (from document filename): {project_name}\n\n"
         f"PLANNING DOCUMENT:\n"
@@ -225,12 +272,14 @@ def build_plan_prompt(doc_path: Path, doc_content: str) -> dict:
         "grounding_context": doc_excerpt,
         "grounding_source_label": "planning document",
         "mode": "plan",
+        "target": target,
     }
 
     meta = {
         "schema_version": "1.0",
         "mode": "plan",
         "path": str(doc_path),
+        "target": target,
     }
 
     return {

@@ -42,6 +42,9 @@ def context_prompt_command(args: argparse.Namespace) -> int:
     from praxis.inference_prompts import build_analyze_prompt, build_plan_prompt
 
     path = Path(args.path).resolve()
+    target = args.target
+
+    print(f"Target: {target}", file=sys.stderr)
 
     if args.mode == "analyze":
         if not path.exists():
@@ -58,7 +61,7 @@ def context_prompt_command(args: argparse.Namespace) -> int:
             if stack_info.frameworks:
                 print(f"Frameworks: {', '.join(stack_info.frameworks)}", file=sys.stderr)
 
-            result = build_analyze_prompt(stack_info, path)
+            result = build_analyze_prompt(stack_info, path, target=target)
             # Stdout is reserved for the JSON output so Bob (or any caller)
             # can pipe `praxis context-prompt analyze ./foo | jq` cleanly.
             print(json.dumps(result, indent=2, ensure_ascii=False))
@@ -96,7 +99,7 @@ def context_prompt_command(args: argparse.Namespace) -> int:
             if content.startswith("\ufeff"):
                 content = content[1:]
 
-            result = build_plan_prompt(path, content)
+            result = build_plan_prompt(path, content, target=target)
             print(json.dumps(result, indent=2, ensure_ascii=False))
             return 0
         except Exception as e:
@@ -157,6 +160,25 @@ def generate_command(args: argparse.Namespace) -> int:
     # Determine mode: prefer partial_context's mode (set by Phase 1), fall back to meta
     mode = partial_context.get("mode") or meta.get("mode") or "analyze"
 
+    # Determine target. Unlike mode this has no default — Phase 1 always stamps
+    # it; if it's missing or invalid the blob is malformed and we reject hard.
+    target = partial_context.get("target") or meta.get("target")
+    if not target:
+        print(
+            "Error: target is missing from both partial_context and meta. "
+            "Did Phase 1 run with an old version of the CLI?",
+            file=sys.stderr,
+        )
+        return 1
+    allowed_targets = {"bob", "claude-code", "cursor"}
+    if target not in allowed_targets:
+        print(
+            f"Error: invalid target {target!r}. "
+            f"Allowed: {sorted(allowed_targets)}",
+            file=sys.stderr,
+        )
+        return 1
+
     # Build the GenerationContext, merging deterministic + inference fields.
     # For analyze mode, stack/frameworks come from partial_context (detected
     # locally during Phase 1). For plan mode, they come from bob_inference
@@ -171,6 +193,7 @@ def generate_command(args: argparse.Namespace) -> int:
             grounding_context=partial_context.get("grounding_context", ""),
             grounding_source_label=partial_context.get("grounding_source_label", "README"),
             mode="analyze",
+            target=target,
         )
     elif mode == "plan":
         context = GenerationContext(
@@ -184,6 +207,7 @@ def generate_command(args: argparse.Namespace) -> int:
             grounding_context=partial_context.get("grounding_context", ""),
             grounding_source_label=partial_context.get("grounding_source_label", "planning document"),
             mode="plan",
+            target=target,
         )
     else:
         print(f"Error: Unknown mode in context: {mode}", file=sys.stderr)
@@ -211,7 +235,7 @@ def generate_command(args: argparse.Namespace) -> int:
         print(f"Error: Output root is not a directory: {output_root}", file=sys.stderr)
         return 1
 
-    print(f"Generating output in: {output_root}", file=sys.stderr)
+    print(f"Generating output for target={target} in: {output_root}", file=sys.stderr)
 
     try:
         output_paths = generate_outputs(output_root, context)
@@ -305,6 +329,13 @@ def main() -> int:
         "path",
         type=str,
         help="Path to the project directory (analyze) or planning document (plan)",
+    )
+    cp_parser.add_argument(
+        "--target",
+        choices=["bob", "claude-code", "cursor"],
+        default="bob",
+        help="Output target. Decides which configuration family Phase 2 will render. "
+             "Default: bob.",
     )
     cp_parser.set_defaults(func=context_prompt_command)
 

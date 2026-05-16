@@ -31,6 +31,23 @@ customModes:
 
       {methodology_principles_short_indent6}
 
+      ## Trigger Keywords
+
+      When the user's message contains the keyword `design` or `scope` (case-insensitive, anywhere in the message), enter STRICT prompt-first mode. Produce a six-field structured prompt and wait for explicit user approval before any action — even if the request appears clear.
+
+      The six fields, in order:
+
+      1. **Restated request** — bullet-point reformulation of what you think the user wants
+      2. **Assumptions** — every assumption you would make if you proceeded as-is
+      3. **Scope IN** — what is included in the work
+      4. **Scope OUT** — what is deliberately excluded
+      5. **Proposed approach** — one or two sentences summarizing your implementation strategy
+      6. **Open questions** — anything you need clarified before starting
+
+      Wait for the developer to approve, edit, or reject the structured prompt. Do not write code, edit files, or run commands until they approve.
+
+      Example trigger phrases: "Design a rate limiter", "Scope out the auth system", "Help me design the database schema". Plain questions like "what does this file do?" or "run the tests" do not trigger strict mode.
+
       ## Security Baseline
 
       - Never write plaintext credentials. Use environment variables.

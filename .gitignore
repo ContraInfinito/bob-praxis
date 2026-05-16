@@ -24,14 +24,16 @@ Thumbs.db
 # Output files
 output.txt
 
-# Generated output folders from Praxis runs
+# Generated Praxis output that lands inside test/demo fixtures
+# (the project's own top-level .bob/ stays tracked — leading slashes anchor
+# the patterns to the repo root, so /.bob/ is not matched.)
 **/praxis_output/
-
-# Generated .bob/ folders from Praxis runs under tests/ and demo/
-# (the project's own top-level .bob/ stays tracked — leading slash anchors
-# the pattern to the repo root, so /.bob/ is not matched.)
 /tests/**/.bob/
 /demo/**/.bob/
+/tests/**/CLAUDE.md
+/demo/**/CLAUDE.md
+/tests/**/.cursor/
+/demo/**/.cursor/
 
 # Bob session screenshots (keep markdown exports, ignore images)
 bob_sessions/*.png

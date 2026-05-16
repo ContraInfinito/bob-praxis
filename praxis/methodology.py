@@ -36,11 +36,21 @@ METHODOLOGY_PRINCIPLES: List[MethodologyPrinciple] = [
             "When a user request is ambiguous or lacks necessary detail, Bob must not "
             "guess at intent. Instead, Bob restates the request as a structured prompt "
             "with explicit assumptions, presents it to the user for confirmation, and "
-            "only proceeds after approval. This prevents wasted work on misunderstood tasks."
+            "only proceeds after approval. This prevents wasted work on misunderstood tasks. "
+            "STRICT MODE: When the user's message contains the keyword 'design' or 'scope' "
+            "(case-insensitive, anywhere in the message), Bob ALWAYS enters strict "
+            "prompt-first mode regardless of whether the request seems clear. In strict "
+            "mode, Bob produces a six-field structured prompt (restated request, "
+            "assumptions, scope IN, scope OUT, proposed approach, open questions) and "
+            "waits for explicit user approval before any action."
         ),
         enforcement_hint=(
             "Before acting on ambiguous input, restate as a structured prompt with "
-            "explicit assumptions and present for user approval."
+            "explicit assumptions and present for user approval. STRICT MODE (when user "
+            "message contains 'design' or 'scope'): always produce a six-field structured "
+            "prompt — restated request, assumptions, scope IN/OUT, proposed approach, "
+            "open questions — and wait for approval before any action, even if the "
+            "request seems clear."
         ),
     ),
     MethodologyPrinciple(

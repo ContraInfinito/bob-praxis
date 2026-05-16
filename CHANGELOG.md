@@ -5,6 +5,20 @@ All notable changes to the Praxis project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## Phase 3 Correction — Format alignment with Bob custom modes spec
+
+**Issue:** Phase 3 originally shipped `praxis_mode.md` (142-line standalone markdown) under the assumption Bob supports loading custom modes from .md files. Verification against IBM Bob official documentation (https://bob.ibm.com/docs/ide/configuration/custom-modes) revealed Bob custom modes use YAML configuration only, either via `.bob/custom_modes.yaml` (project-scoped) or Bob Settings UI (global).
+
+**Fix:** Converted `praxis_mode.md` content into `.bob/custom_modes.yaml` with proper field separation (`slug`, `name`, `roleDefinition`, `whenToUse`, `customInstructions`). Kept `praxis_mode.md` in repo root as human-readable design documentation. Updated README "Installing the Praxis Bob Mode" section to reflect actual Bob behavior: project-scoped mode loads automatically from `.bob/custom_modes.yaml`; optional global-install path documented separately.
+
+**Verification:** `.bob/custom_modes.yaml` parses cleanly with PyYAML. Demo-critical "ask each clarifying question and wait for developer answers" instruction preserved verbatim in Pattern 2 step 6.
+
+**Cost:** Zero Bobcoins (correction done via Claude Code).
+
+**Process lesson:** Verify platform-specific assumptions against official docs before drafting integration code. Logged for future phases.
+
+---
+
 ### Phase 3 - Praxis Bob Custom Mode (2026-05-15)
 
 **Status**: Complete

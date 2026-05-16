@@ -1,3 +1,6 @@
+> **Note:** This file is human-readable design documentation for the Praxis Bob custom mode. The active mode configuration Bob actually loads is `.bob/custom_modes.yaml` in this same repository. Edit the YAML file to change Bob's behavior; this markdown file is reference material.
+
+
 # Praxis Mode
 
 **Type**: Methodology Transfer Mode (Global)

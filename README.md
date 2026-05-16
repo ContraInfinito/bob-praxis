@@ -99,21 +99,32 @@ Output appears in `<target>/praxis_output/`.
 
 ## Installing the Praxis Bob Mode
 
-After installing Praxis itself, register the meta-mode with Bob so you can invoke Praxis from inside Bob:
+Praxis ships as a project-scoped Bob custom mode in `.bob/custom_modes.yaml`. When you open this repository in Bob IDE, the **🛠️ Praxis** mode automatically appears in your mode list — no manual import needed.
 
-1. Open Bob IDE.
-2. Go to the custom modes section in Bob's settings.
-3. Import `praxis_mode.md` from this repository's root.
-4. Activate the mode when you want to apply Praxis to a project.
+### Using Praxis in this repository
 
-Once the mode is active, you can use natural language to invoke it:
+1. Open this repository in Bob IDE (Bob auto-loads `.bob/custom_modes.yaml`).
+2. Select the **🛠️ Praxis** mode from Bob's mode selector.
+3. Invoke with natural language:
+   - **Analyze an existing codebase**: "Apply Praxis to ./tests/sample_python_project"
+   - **Bootstrap from a planning document**: "Apply Praxis to ./tests/sample_planning_doc.md"
 
-- **Analyze an existing codebase**: "Apply Praxis to ./my-project"
-- **Bootstrap from a planning document**: "Apply Praxis to ./my-plan.md"
+For planning-document mode, Bob will surface any clarifying questions Praxis generated and ask you about them before proceeding.
 
-Bob will run the appropriate Praxis CLI command, read the generated configuration files, and adopt them as session context. For planning-document mode, Bob will surface any clarifying questions Praxis generated and ask you about them before proceeding.
+### Using Praxis as a global meta-mode (optional)
 
-After Praxis runs successfully, it generates a project-specific `custom_mode.md` in the target's `praxis_output/` folder. Load that as a project-specific Bob mode for ongoing sessions on that project. The Praxis meta-mode is a bootstrapper — once a project has its own generated mode, use that going forward.
+To use Praxis across other projects on your machine, copy the contents of `.bob/custom_modes.yaml` into your global Bob settings:
+
+1. Open Bob's Settings → Modes tab.
+2. Click "Create new mode" (or equivalent).
+3. Paste the YAML fields (`slug`, `name`, `roleDefinition`, `whenToUse`, `customInstructions`) into the corresponding form fields.
+4. Save.
+
+The mode is now available in every project. Note that the Praxis Python CLI must still be installed and accessible in the target project's environment (see Installation above).
+
+### What happens after Praxis runs
+
+After Praxis applies, it generates a project-specific `custom_mode.md` in the target's `praxis_output/` folder. Add that to the target project's `.bob/custom_modes.yaml` (or import via Bob settings) for ongoing sessions on that project. The Praxis meta-mode is a bootstrapper — once a project has its own generated mode, use that going forward.
 
 ## Project Structure
 
@@ -130,6 +141,8 @@ bob-praxis/
 │   └── templates/         # Output file templates
 ├── tests/                 # Sample projects for testing
 ├── bob_sessions/          # Exported Bob task sessions (submission requirement)
+├── .bob/                  # Bob IDE project-scoped configuration
+│   └── custom_modes.yaml  # Praxis project mode definition
 ├── requirements.txt
 ├── .env                   # API credentials (not tracked)
 ├── .gitignore
@@ -145,9 +158,9 @@ bob-praxis/
 Built for the IBM Bob Hackathon, May 15-17, 2026. See CHANGELOG.md for phase-by-phase progress.
 
 - **Phase 0**: ✅ Project setup, security baseline, documentation
-- **Phase 1**: 🔄 CLI skeleton + Python stack support
-- **Phase 2**: ⏳ Planning-doc mode + Unity stack
-- **Phase 3**: ⏳ Bob custom mode wrapper
+- **Phase 1**: ✅ CLI skeleton + Python stack support
+- **Phase 2**: ✅ Planning-doc mode (Unity deferred to v2)
+- **Phase 3**: ✅ Bob custom mode wrapper
 - **Phase 4**: ⏳ Demo, docs, submission
 
 ## Acknowledgments

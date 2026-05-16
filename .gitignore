@@ -27,6 +27,12 @@ output.txt
 # Generated output folders from Praxis runs
 **/praxis_output/
 
+# Generated .bob/ folders from Praxis runs under tests/ and demo/
+# (the project's own top-level .bob/ stays tracked — leading slash anchors
+# the pattern to the repo root, so /.bob/ is not matched.)
+/tests/**/.bob/
+/demo/**/.bob/
+
 # Bob session screenshots (keep markdown exports, ignore images)
 bob_sessions/*.png
 bob_sessions/*.jpg
@@ -36,3 +42,9 @@ bob_sessions/*.gif
 # Verification capture files
 *_output.txt
 *_smoke*.txt
+
+# Scratch prompt drafts (kept out of accidental commits)
+_claude_code_prompt_*.md
+_verify_*.py
+_commitmsg.txt
+_temp_*.json

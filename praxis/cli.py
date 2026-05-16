@@ -10,10 +10,12 @@ Two-phase handshake design (Phase 4-revised):
           - partial_context  deterministic fields already known
           - meta             schema_version, mode, path
 
-  Phase 2: `praxis generate --context <json> --output-root <dir>`
+  Phase 2: `praxis generate (--context <json> | --context-file <path>) --output-root <dir>`
       Consumes a JSON blob containing partial_context + bob_inference (the
-      host agent's answer) + meta, renders the templates, writes the six
-      output files into <output-root>/praxis_output/.
+      host agent's answer) + meta, renders the templates, writes the per-
+      target output files under <output-root>. Use --context for short inline
+      blobs; use --context-file (preferred on Windows) when the blob has
+      characters that fight shell quoting.
 
 The CLI prints status messages to stderr and machine-parseable output (the
 Phase 1 JSON, the Phase 2 generated-file-path list) to stdout. This makes the
@@ -116,8 +118,10 @@ def generate_command(args: argparse.Namespace) -> int:
     Phase 2: consume the host agent's answer + partial context, write files.
 
     Args:
-        args: Parsed argparse namespace with `context` (JSON string) and
-              `output_root` (directory path).
+        args: Parsed argparse namespace. Exactly one of `context` (inline JSON
+              string) or `context_file` (path to a UTF-8 JSON file) is set;
+              argparse's mutually-exclusive group enforces the "exactly one"
+              invariant. `output_root` (directory path) is always set.
 
     Returns:
         Exit code (0 success, 1 user/IO error, 2 unsupported stack).
@@ -125,11 +129,47 @@ def generate_command(args: argparse.Namespace) -> int:
     # Late imports
     from praxis.generate import GenerationContext, generate_outputs
 
+    # Resolve which flag supplied the JSON. argparse's mutually-exclusive group
+    # guarantees exactly one of --context / --context-file is set; we still
+    # branch explicitly so the failure mode is obvious in tracebacks.
+    if args.context is not None:
+        context_source = "inline --context"
+        raw_json = args.context
+    else:
+        file_path = Path(args.context_file)
+        if not file_path.exists():
+            print(
+                f"Error: --context-file does not exist: {file_path}",
+                file=sys.stderr,
+            )
+            return 1
+        if not file_path.is_file():
+            print(
+                f"Error: --context-file is not a regular file: {file_path}",
+                file=sys.stderr,
+            )
+            return 1
+        try:
+            raw_json = file_path.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError) as e:
+            print(
+                f"Error: Could not read --context-file {file_path}: {e}",
+                file=sys.stderr,
+            )
+            return 1
+        # Strip BOM if present. PowerShell's default Out-File encoding writes
+        # a UTF-8 BOM that json.loads() rejects with a useless "Expecting value:
+        # line 1 column 1 (char 0)" error. Same idiom as the planning-doc
+        # reader above and generate.py's _read_project_readme.
+        if raw_json.startswith("\ufeff"):
+            raw_json = raw_json[1:]
+        context_source = f"--context-file {file_path}"
+
     # Parse the context JSON blob
     try:
-        blob = json.loads(args.context)
+        blob = json.loads(raw_json)
     except json.JSONDecodeError as e:
-        print(f"Error: --context is not valid JSON: {e}", file=sys.stderr)
+        print(f"Error: {context_source} is not valid JSON: {e}", file=sys.stderr)
         return 1
 
     # Validate required top-level keys
@@ -344,17 +384,33 @@ def main() -> int:
         "generate",
         help="Phase 2: consume the host agent's answer and write output files",
         description=(
-            "Accepts a JSON blob containing partial_context (from Phase 1) plus "
-            "bob_inference (the host agent's answers) and meta. Renders the Praxis "
-            "output files into <output-root>/praxis_output/. Prints generated file "
-            "paths to stdout, one per line."
+            "Accepts a JSON blob via --context (inline) or --context-file (path). "
+            "The blob contains partial_context (from Phase 1) plus bob_inference "
+            "(the host agent's answers) and meta. Renders the Praxis output files "
+            "into the appropriate per-target location under --output-root. Prints "
+            "generated file paths to stdout, one per line."
         ),
     )
-    gen_parser.add_argument(
+    # --context and --context-file are alternative ways to supply the same JSON
+    # payload. Inline is convenient for short blobs and for the smoke test;
+    # --context-file dodges shell quoting entirely (essential on Windows where
+    # cmd / PowerShell mangle em-dashes, embedded double quotes, and CRLF
+    # line endings inside a single-quoted JSON argument).
+    context_group = gen_parser.add_mutually_exclusive_group(required=True)
+    context_group.add_argument(
         "--context",
         type=str,
-        required=True,
-        help="JSON blob with keys: partial_context, bob_inference, meta",
+        help="Inline JSON blob with keys: partial_context, bob_inference, meta. "
+             "Use --context-file instead when the blob contains characters that "
+             "are awkward to quote in your shell (em-dashes, embedded double "
+             "quotes, newlines).",
+    )
+    context_group.add_argument(
+        "--context-file",
+        type=str,
+        help="Path to a UTF-8 JSON file containing the same blob structure as "
+             "--context. Preferred over --context for non-trivial payloads, "
+             "especially on Windows where cmd/PowerShell quoting is fragile.",
     )
     gen_parser.add_argument(
         "--output-root",

@@ -308,6 +308,96 @@ def _run_one_target(mode: str, target: str, inference: dict) -> None:
         print(f"  OK: {total_files} file(s) ({', '.join(subdir_reports)})")
 
 
+def _run_context_file_smoke(inference: dict) -> None:
+    """
+    7th path: prove --context-file works as a drop-in for --context.
+
+    Uses analyze + bob (the canonical case) — Phase 1 emits the partial
+    context, we assemble the same Phase 2 blob as the inline path, but write
+    it to a UTF-8 file and pass the path via --context-file instead of
+    --context. Same file set should land in the same locations.
+    """
+    print("--- analyze + target=bob via --context-file ---")
+    source_path = _source_path_for("analyze")
+    assert source_path.exists(), f"Fixture missing: {source_path}"
+
+    rc, stdout, stderr = run_cli([
+        "context-prompt", "analyze", str(source_path), "--target", "bob",
+    ])
+    assert rc == 0, f"phase1 (--context-file path) rc={rc}\nstderr:\n{stderr}"
+    blob = json.loads(stdout)
+
+    context_blob = {
+        "partial_context": blob["partial_context"],
+        "bob_inference": inference,
+        "meta": blob["meta"],
+    }
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        # Write the context blob to a UTF-8 temp file inside the same tmpdir.
+        # Using NO BOM (default for Path.write_text with encoding="utf-8")
+        # exercises the happy path. The BOM-strip code in cli.py is exercised
+        # implicitly by anyone who writes the file via PowerShell Out-File.
+        ctx_path = Path(tmpdir) / "context.json"
+        ctx_path.write_text(json.dumps(context_blob), encoding="utf-8")
+
+        rc, stdout, stderr = run_cli([
+            "generate",
+            "--context-file", str(ctx_path),
+            "--output-root", tmpdir,
+        ])
+        assert rc == 0, f"phase2 via --context-file rc={rc}\nstderr:\n{stderr}"
+
+        total_files = 0
+        subdir_reports = []
+        for subdir_rel, expected_files in EXPECTED_OUTPUTS["bob"]:
+            target_dir = Path(tmpdir) / subdir_rel
+            assert target_dir.is_dir(), f"missing {target_dir} via --context-file"
+            actual = {p.name for p in target_dir.iterdir() if p.is_file()}
+            assert actual == expected_files, (
+                f"--context-file path subdir={subdir_rel}: "
+                f"expected {expected_files}, got {actual}"
+            )
+            total_files += len(actual)
+            subdir_label = str(subdir_rel) if str(subdir_rel) != "." else "<root>"
+            subdir_reports.append(f"{len(actual)} in {subdir_label}")
+
+        print(
+            f"  OK: --context-file produced {total_files} file(s) "
+            f"({', '.join(subdir_reports)})"
+        )
+
+
+def _run_mutex_smoke() -> None:
+    """
+    Verify argparse enforces the --context / --context-file mutex correctly:
+
+      * Both flags set  → reject (exit non-zero)
+      * Neither flag set → reject (exit non-zero)
+
+    Argparse handles this for free via add_mutually_exclusive_group(required=True);
+    these subprocess invocations make the guarantee testable end-to-end so a
+    refactor that drops the group is caught immediately.
+    """
+    print("--- mutex: both flags ---")
+    rc, _, _ = run_cli([
+        "generate",
+        "--context", "{}",
+        "--context-file", "nonexistent.json",
+        "--output-root", ".",
+    ])
+    assert rc != 0, "generate should reject both --context and --context-file"
+    print("  OK: rejected both")
+
+    print("--- mutex: neither flag ---")
+    rc, _, _ = run_cli([
+        "generate",
+        "--output-root", ".",
+    ])
+    assert rc != 0, "generate should reject neither --context nor --context-file"
+    print("  OK: rejected neither")
+
+
 def main() -> int:
     print("=== analyze paths (3 targets) ===")
     for target in ("bob", "claude-code", "cursor"):
@@ -319,7 +409,15 @@ def main() -> int:
         _run_one_target("plan", target, PLAN_INFERENCE)
 
     print()
-    print("All two-phase smoke tests passed (6 paths).")
+    print("=== --context-file alternative path (1 target) ===")
+    _run_context_file_smoke(ANALYZE_INFERENCE)
+
+    print()
+    print("=== --context / --context-file mutex (2 checks) ===")
+    _run_mutex_smoke()
+
+    print()
+    print("All two-phase smoke tests passed (7 paths + 2 mutex checks).")
     return 0
 
 

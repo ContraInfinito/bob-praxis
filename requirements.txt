@@ -1,13 +1,18 @@
-# Praxis runtime dependencies.
+# Praxis dependencies.
 #
 # Phase 4-revised: watsonx.ai was removed; the CLI is now a pure templating
 # engine that does no LLM calls of its own. Inference is delegated to the host
 # agent (Bob) via the two-phase handshake (see praxis/cli.py and
 # praxis/inference_prompts.py).
 #
-# All other functionality uses only the Python standard library:
+# Praxis ITSELF has zero runtime dependencies. All CLI functionality uses
+# only the Python standard library:
 #   - argparse, json, pathlib, dataclasses, datetime  (stdlib)
 #   - tomllib (stdlib, Python 3.11+)
 #   - subprocess, tempfile (stdlib, used in tests)
 #
-# Required runtime dependencies: NONE.
+# The smoke test (tests/test_two_phase_smoke.py) imports PyYAML to validate
+# the generated .bob/custom_modes.yaml structure. PyYAML is the ONLY pip
+# dependency, and only for running the smoke test — not for using Praxis.
+
+pyyaml>=6.0

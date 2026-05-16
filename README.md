@@ -1,55 +1,130 @@
 # Praxis
 
-**A methodology transfer tool for IBM Bob IDE.**
+**Every time you switch AI coding assistants, you re-teach it your conventions. Praxis stops that.**
 
-Praxis takes a developer's AI-collaboration methodology — their opinions about how an AI partner should work alongside them — and projects it onto any given codebase or planning document, producing tailored Bob IDE configuration that makes Bob behave consistently with that methodology on the specific project.
+Praxis is a methodology transfer tool. It takes how you want an AI partner to work — the principles, the conventions, the moments when you want it to stop and ask — and projects them onto any project as configuration files that three different AI agents understand: **Bob IDE**, **Claude Code**, and **Cursor**.
 
-The name Praxis is Greek for "the practical application of theory." Praxis turns methodology theory (how I want to work with AI) into concrete Bob configuration (skills, custom modes, project rules) applied to a specific project (Python codebase, Unity project, planning doc).
+Same methodology. Three idiomatic outputs. Loadable on day one without any manual import step.
 
-## What Praxis Generates
+The name *Praxis* is Greek for "the practical application of theory." It turns methodology theory (how I want to work with AI) into concrete configuration (rules, contracts, conventions) applied to a specific project.
 
-Given either a project directory or a planning document, Praxis produces a tailored set of Bob configuration files:
+---
 
-- `AGENTS.md` — entry-point context document Bob reads on session start
-- `PRAXIS_CONTRACT.md` — top-level AI-collaboration contract: how Bob will work with the developer on this specific project
-- Stack-specific skill file (e.g., `python_skill.md`, `unity_skill.md`) — conventions, dependency awareness, common patterns for the detected stack
-- Methodology skill file — the developer's transferable working-style opinions encoded as Bob behavior
-- `.bobignore` — files Bob should never read or modify
-- A custom Bob mode tailored to this project
+## What Praxis Does
 
-## Architecture
+Given either an existing codebase or a planning document, Praxis generates the configuration files each agent expects, in the format that agent expects, in the location that agent automatically loads.
 
-Praxis is a hybrid of two interfaces backed by one engine:
+### For Bob IDE
 
-1. **CLI core (Python)** — `praxis analyze ./project` or `praxis plan ./spec.md`. Deterministic. Detects stack, parses dependencies, assembles templates, writes output files. Calls watsonx.ai Granite for inference-heavy steps (planning-doc interpretation, stack-tailored prose generation).
-2. **Praxis custom mode (markdown)** — wraps the CLI from inside Bob IDE. Adds conversational refinement and ambiguity handling.
+A loadable project-scoped Bob mode plus supporting documentation:
 
-The CLI is fully functional standalone. The custom mode is the enhanced experience.
+- `.bob/custom_modes.yaml` — auto-discovered by Bob when the project is opened. The mode encodes the methodology, the trigger keywords, and the session-start checklist.
+- `praxis_output/AGENTS.md` — project context, the seven methodology principles, and an "Open Questions for the Developer" section when generated from a planning document.
+- `praxis_output/PRAXIS_CONTRACT.md` — the methodology contract in full form, including the strict-mode rider on Principle 1.
+- `praxis_output/python_skill.md` — stack-specific conventions (Flask, FastAPI, Django, pytest, pandas/numpy patterns).
+- `praxis_output/methodology_skill.md` — the seven principles as an enforcement guide.
+- `praxis_output/.bobignore` — files Bob should never read or modify.
 
-## Default Methodology Principles
+### For Claude Code
 
-Praxis ships with seven hardcoded methodology defaults that users can override by editing the generated output files:
+A single `CLAUDE.md` at the project root. Auto-loaded by Claude Code on session start. Contains the seven principles, the trigger-keyword section, project conventions, and the "Open Questions" list when generated from a planning document.
 
-1. **Prompt-first execution** — rewrite vague user input into a structured prompt before acting
-2. **Proactive issue resolution** — fix adjacent issues you spot, log what was done
-3. **Code review by a second agent** — every change critiqued before presentation
-4. **Logging discipline** — every session produces a changelog entry
-5. **Definitional rigor** — define every technical term before using it
-6. **Simplicity bias** — simplest solution that fully solves the problem
-7. **Security baseline** — never plaintext credentials, scan for secrets, honor .bobignore
+### For Cursor
 
-## Supported Stacks (v1)
+Two `.mdc` files under `.cursor/rules/`. Auto-discovered when the project is opened in Cursor:
 
-- **Python** — requirements.txt and pyproject.toml; detects Flask, FastAPI, Django, pandas/numpy, pytest
-- **Unity** — tool scripts vs game scripts, ScriptableObjects, Editor folder rules, Assembly Definition awareness
-- **Generic fallback** for everything else
+- `methodology.mdc` — project context and methodology principles, applied project-wide (`alwaysApply: true`).
+- `python.mdc` — Python-language conventions, attached when editing `.py` files (`globs: "**/*.py"`).
+
+### Target selection
+
+The default target is Bob. To select a different target, the user includes a phrase in their natural-language invocation:
+
+- `Apply Praxis to ./my-project` → Bob (default)
+- `Apply Praxis to ./my-project for Claude Code` → Claude Code
+- `Apply Praxis to ./my-project as CLAUDE.md` → Claude Code (alternative phrasing)
+- `Apply Praxis to ./my-project for Cursor` → Cursor
+- `Apply Praxis to ./my-project target Cursor` → Cursor (alternative phrasing)
+
+The chosen target is announced in the first line of the response so the developer can catch a misinterpretation before any file is written.
+
+---
+
+## The Seven Methodology Principles
+
+Praxis ships with seven hardcoded methodology defaults. Developers can override them by editing the generated configuration files.
+
+1. **Prompt-first execution** — Rewrite vague user input into structured prompts before acting. *Strict mode (triggered by the keywords `design` or `scope`):* produce a six-field structured prompt and wait for explicit approval before any action, even if the request seems clear.
+2. **Proactive issue resolution** — Fix adjacent issues you spot; log what was done.
+3. **Code review by a second agent** — Every change critiqued before presentation.
+4. **Logging discipline** — Every session produces a timestamped changelog entry.
+5. **Definitional rigor** — Define every technical term before using it.
+6. **Simplicity bias** — Simplest solution that fully solves the problem.
+7. **Security baseline** — Never plaintext credentials; scan for secrets; honor `.bobignore`.
+
+### Trigger keywords
+
+When a user's message contains the keyword `design` or `scope` (case-insensitive, anywhere in the message), the agent enters strict prompt-first mode and produces a six-field structured prompt before any action:
+
+1. **Restated request** — bullet-point reformulation of what the agent thinks the user wants
+2. **Assumptions** — every assumption the agent would make if it proceeded as-is
+3. **Scope IN** — what is included in the work
+4. **Scope OUT** — what is deliberately excluded
+5. **Proposed approach** — one or two sentences summarizing the implementation strategy
+6. **Open questions** — anything the agent needs clarified before starting
+
+The agent then waits for the developer to approve, edit, or reject the structured prompt. No code changes, file writes, or commands execute until approval.
+
+This trigger surfaces redundantly across each agent's config: a dedicated top-of-file `Trigger Keywords` section AND a strict-mode rider embedded inside Principle 1's full description. Even if an agent skims past one, the other catches the trigger.
+
+---
+
+## Plan mode: surface what the planning doc didn't say
+
+When given a planning document (`.md`, `.markdown`, or `.txt`) instead of an existing codebase, Praxis runs in **plan mode**. Plan mode generates the same per-target configuration, plus a list of clarifying questions about gaps in the planning document.
+
+The questions land in two places:
+
+- In the agent's chat response immediately, so the developer can answer them in conversation.
+- Verbatim in the generated configuration's "Open Questions for the Developer" section, so future sessions (or future agents loading the project) see them too.
+
+This is the architectural enforcement of Principle 1: the methodology doesn't trust the agent to remember to ask. It bakes the asking into the project's documentation.
+
+---
+
+## Two-phase handshake architecture
+
+Praxis is a CLI that runs in two phases. The host agent (Bob, or any compatible orchestrator) bridges them.
+
+**Phase 1: `praxis context-prompt <mode> <path> --target <target>`**
+
+- Reads project files (analyze mode) or the planning document (plan mode).
+- Detects stack and frameworks deterministically (no LLM call here).
+- Builds a natural-language prompt for the host agent to answer.
+- Emits JSON to stdout containing `prompt_for_bob`, `partial_context` (deterministic fields), and `meta`.
+
+**Phase 2: `praxis generate --context-file <path> --output-root <dir>`**
+
+- Reads the host agent's JSON answer plus the Phase 1 context from a file.
+- Validates the schema.
+- Renders the per-target templates.
+- Writes files to the appropriate per-target locations.
+- Prints generated file paths to stdout.
+
+The `--context-file` flag avoids shell-quoting fragility on Windows (em-dashes, embedded quotes, newlines in JSON content all survive cleanly). An inline `--context '<json>'` flag is also accepted for trivially small payloads.
+
+Both phases print machine-parseable output to stdout and human-readable status to stderr — clean for piping, clean for orchestration.
+
+---
 
 ## Installation
 
 ### Prerequisites
 
 - Python 3.11 or higher
-- IBM watsonx.ai API credentials (API key and Project ID)
+- Bob IDE (for the Bob-orchestrated workflow), Claude Code (to consume Claude Code targets), or Cursor (to consume Cursor targets)
+
+**No external API credentials are required.** Praxis has zero runtime dependencies as of v0.1.0. The host agent supplies the inference; Praxis only writes files.
 
 ### Setup
 
@@ -59,7 +134,7 @@ Praxis ships with seven hardcoded methodology defaults that users can override b
    cd bob-praxis
    ```
 
-2. **Create and activate virtual environment**:
+2. **(Optional) Create and activate a virtual environment**. Praxis itself doesn't need any pip-installed dependencies, so this is only necessary if you plan to run the smoke tests (which need `pyyaml`):
    ```bash
    python -m venv venv
 
@@ -68,109 +143,162 @@ Praxis ships with seven hardcoded methodology defaults that users can override b
 
    # On macOS/Linux:
    source venv/bin/activate
-   ```
 
-3. **Install dependencies**:
-   ```bash
    pip install -r requirements.txt
    ```
 
-4. **Configure environment variables**:
-   Create a `.env` file in the project root:
-   ```env
-   WATSONX_API_KEY=your_api_key_here
-   WATSONX_PROJECT_ID=your_project_id_here
-   WATSONX_ENDPOINT_URL=https://us-south.ml.cloud.ibm.com
+3. **Run the smoke test** to verify the install:
+   ```bash
+   python tests/test_two_phase_smoke.py
    ```
+   Expected: all 7 paths and 2 mutex checks pass.
 
-   **Important**: Never commit your `.env` file. It's already in `.gitignore`.
+---
 
 ## Usage
 
-```bash
-# Analyze an existing project
-python -m praxis analyze ./my-project
+### As a Bob custom mode (recommended)
 
-# Bootstrap from a planning document
-python -m praxis plan ./project_spec.md
+Praxis ships as a project-scoped Bob mode in `.bob/custom_modes.yaml`. When you open this repository in Bob IDE, the **🛠️ Praxis** mode automatically appears in the mode list — no manual import needed.
+
+1. Open this repository in Bob IDE.
+2. Select **🛠️ Praxis** from Bob's mode selector.
+3. Invoke with natural language:
+   - **Apply to an existing codebase**: `Apply Praxis to ./tests/sample_python_project`
+   - **Apply with a non-default target**: `Apply Praxis to ./tests/sample_python_project for Claude Code`
+   - **Bootstrap from a planning document**: `Apply Praxis to ./tests/sample_planning_doc.md`
+
+The Bob mode handles both phases of the CLI handshake transparently. It runs Phase 1, generates the inference internally, and invokes Phase 2 with `--context-file` (file-based handoff, safe across Windows/POSIX shells).
+
+For planning-document input, Bob will surface any clarifying questions Praxis generated and wait for the developer to answer them before treating the configuration as final.
+
+### As a standalone CLI
+
+You can also drive Praxis directly without Bob, as long as you supply the inference yourself:
+
+```bash
+# Phase 1: read files, emit a prompt for the host agent
+python -m praxis context-prompt analyze ./my-project --target bob > phase1.json
+
+# Build a Phase 2 context blob: combine partial_context (from phase1.json),
+# your bob_inference answer (the host agent's response), and meta into one JSON file.
+# Write the combined blob to phase2.json.
+
+# Phase 2: consume the combined blob, write output files
+python -m praxis generate --context-file phase2.json --output-root ./my-project
 ```
 
-Output appears in `<target>/praxis_output/`.
+The smoke test (`tests/test_two_phase_smoke.py`) is a working example of the standalone flow with a synthetic host-agent answer.
 
-## Installing the Praxis Bob Mode
+### As a global Bob meta-mode (apply to other projects on your machine)
 
-Praxis ships as a project-scoped Bob custom mode in `.bob/custom_modes.yaml`. When you open this repository in Bob IDE, the **🛠️ Praxis** mode automatically appears in your mode list — no manual import needed.
-
-### Using Praxis in this repository
-
-1. Open this repository in Bob IDE (Bob auto-loads `.bob/custom_modes.yaml`).
-2. Select the **🛠️ Praxis** mode from Bob's mode selector.
-3. Invoke with natural language:
-   - **Analyze an existing codebase**: "Apply Praxis to ./tests/sample_python_project"
-   - **Bootstrap from a planning document**: "Apply Praxis to ./tests/sample_planning_doc.md"
-
-For planning-document mode, Bob will surface any clarifying questions Praxis generated and ask you about them before proceeding.
-
-### Using Praxis as a global meta-mode (optional)
-
-To use Praxis across other projects on your machine, copy the contents of `.bob/custom_modes.yaml` into your global Bob settings:
+To use Praxis on projects other than this repository:
 
 1. Open Bob's Settings → Modes tab.
 2. Click "Create new mode" (or equivalent).
-3. Paste the YAML fields (`slug`, `name`, `roleDefinition`, `whenToUse`, `customInstructions`) into the corresponding form fields.
+3. Paste the YAML fields (`slug`, `name`, `roleDefinition`, `whenToUse`, `groups`, `customInstructions`) from this repo's `.bob/custom_modes.yaml` into the corresponding form fields.
 4. Save.
 
-The mode is now available in every project. Note that the Praxis Python CLI must still be installed and accessible in the target project's environment (see Installation above).
+The mode is now available in every project. Praxis's Python module (`python -m praxis`) must be importable in the target project's environment — clone this repo somewhere on `PYTHONPATH`, or add it to a project's virtualenv.
 
-### What happens after Praxis runs
+After Praxis runs against another project, its generated `.bob/custom_modes.yaml` is auto-discovered the next time that project opens in Bob. The Praxis meta-mode is a bootstrapper — once a project has its own generated mode, use that going forward.
 
-After Praxis applies, it generates a project-specific `custom_mode.md` in the target's `praxis_output/` folder. Add that to the target project's `.bob/custom_modes.yaml` (or import via Bob settings) for ongoing sessions on that project. The Praxis meta-mode is a bootstrapper — once a project has its own generated mode, use that going forward.
+---
 
-## Project Structure
+## What's supported
+
+- **Stack detection**: Python (Flask, FastAPI, Django, pandas, numpy, pytest)
+- **Targets**: Bob IDE, Claude Code, Cursor
+- **Modes**: `analyze` (existing codebase), `plan` (planning document)
+- **Operating system**: developed and tested on Windows; Linux/macOS should work but are untested in v0.1.0
+- **Generic fallback** for non-Python stacks returns a `NotImplementedError` in v0.1.0; multi-language support is deferred to v2
+
+---
+
+## Project structure
 
 ```
 bob-praxis/
-├── praxis/                # Main Python package (Phase 1+)
+├── praxis/                       # Main Python package
 │   ├── __init__.py
-│   ├── __main__.py        # Entry point for python -m praxis
-│   ├── cli.py             # Argparse CLI
-│   ├── detect.py          # Stack detection
-│   ├── methodology.py     # Hardcoded methodology defaults
-│   ├── granite.py         # watsonx.ai integration
-│   ├── generate.py        # Template assembly
-│   └── templates/         # Output file templates
-├── tests/                 # Sample projects for testing
-├── bob_sessions/          # Exported Bob task sessions (submission requirement)
-├── .bob/                  # Bob IDE project-scoped configuration
-│   └── custom_modes.yaml  # Praxis project mode definition
-├── requirements.txt
-├── .env                   # API credentials (not tracked)
+│   ├── __main__.py               # Entry point for `python -m praxis`
+│   ├── cli.py                    # Argparse CLI (context-prompt + generate subcommands)
+│   ├── detect.py                 # Stack and framework detection
+│   ├── methodology.py            # The seven methodology principles
+│   ├── inference_prompts.py      # Phase 1 prompt construction for the host agent
+│   ├── generate.py               # Phase 2 template rendering and per-target dispatch
+│   └── templates/                # Per-target template families
+│       ├── bob/                  # AGENTS.md, PRAXIS_CONTRACT.md, custom_modes.yaml, etc.
+│       ├── claude_code/          # CLAUDE.md
+│       └── cursor/               # methodology.mdc, python.mdc
+├── tests/
+│   ├── test_two_phase_smoke.py   # End-to-end smoke test (7 paths + 2 mutex checks)
+│   ├── sample_python_project/    # Test fixture for analyze mode
+│   └── sample_planning_doc.md    # Test fixture for plan mode
+├── bob_sessions/                 # Exported Bob sessions and demo transcripts
+├── .bob/
+│   └── custom_modes.yaml         # The Praxis Bob mode definition for this repository
+├── requirements.txt              # pyyaml (smoke tests only)
 ├── .gitignore
 ├── LICENSE
 ├── README.md
 ├── CHANGELOG.md
-├── BOBCOIN_LOG.md         # Bobcoin consumption tracking
-└── test_watsonx.py        # watsonx.ai connectivity smoke test
+└── BOBCOIN_LOG.md
 ```
+
+---
+
+## Verification
+
+A two-phase smoke test exercises every (mode × target) combination plus both flag variants of the Phase 2 input:
+
+```
+python tests/test_two_phase_smoke.py
+```
+
+Coverage:
+
+- 6 paths: {analyze, plan} × {bob, claude-code, cursor}
+- 1 path: analyze + bob via `--context-file` (the Windows-safe alternative)
+- 2 paths: argparse mutex checks rejecting both flags or neither
+
+All 9 must pass for the build to be considered healthy.
+
+---
 
 ## Status
 
-Built for the IBM Bob Hackathon, May 15-17, 2026. See CHANGELOG.md for phase-by-phase progress.
+Built for the IBM Bob Hackathon, May 15–17, 2026.
 
-- **Phase 0**: ✅ Project setup, security baseline, documentation
-- **Phase 1**: ✅ CLI skeleton + Python stack support
-- **Phase 2**: ✅ Planning-doc mode (Unity deferred to v2)
-- **Phase 3**: ✅ Bob custom mode wrapper
-- **Phase 4**: ⏳ Demo, docs, submission
+- **Phase 0**:  Project setup, security baseline, documentation
+- **Phase 1**:  CLI skeleton + Python stack support
+- **Phase 2**:  Planning-doc mode
+- **Phase 3**:  Bob custom mode wrapper
+- **Phase 4**:  Two-phase handshake, multi-target (Bob/Claude Code/Cursor), trigger keywords, plan-mode clarifying questions, Windows-safe Phase 2 via `--context-file`
+- **Phase 5**:  Demo recording, slides, submission
+
+See `CHANGELOG.md` for sub-task-level progress.
+
+---
 
 ## Acknowledgments
 
-Built for the IBM Bob Hackathon 2026. Developed using IBM Bob IDE (https://bob.ibm.com) and IBM watsonx.ai Granite models. Reviewed and refined with Claude (Anthropic) as a second-agent reviewer.
+Built for the IBM Bob Hackathon 2026.
+
+- **Bob IDE** (https://bob.ibm.com) — the methodology's primary host agent and the CLI's first orchestrator.
+- **Claude Code** and **Cursor** — the additional target ecosystems whose configurations Praxis generates.
+- **Claude (Anthropic)** — second-agent reviewer during methodology and architecture design.
+
+The seven methodology principles encoded in Praxis are derived from the author's working preferences with Claude over many months of collaborative development. Praxis is the act of writing those preferences down in a form other agents can read.
+
+---
 
 ## Contact
 
 - GitHub: [@ContraInfinito](https://github.com/ContraInfinito)
 - Repository: [bob-praxis](https://github.com/ContraInfinito/bob-praxis)
+
+---
 
 ## License
 

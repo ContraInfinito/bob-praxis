@@ -134,6 +134,18 @@ pip install praxis-bob
 
 This installs the `praxis` command and the Python module (`python -m praxis`). No external API credentials required; Praxis has zero runtime dependencies.
 
+### Zero-setup install (for Bob IDE users)
+
+If you use [Bob IDE](https://bob.ibm.com), you can skip the `pip install` step entirely. Praxis ships as a Bob custom mode that auto-installs itself on first invocation:
+
+1. Download `.bob/custom_modes.yaml` from this repository.
+2. Import it into Bob: **Settings → Modes → Import / Create new mode**, pasting the YAML fields.
+3. Activate the **🛠️ Praxis** mode and run a command like `Apply Praxis to ./my-project`.
+
+On first invocation, the mode detects that Praxis isn't installed and runs `pip install --user praxis-bob` automatically. Subsequent invocations skip the check.
+
+The auto-install path has the same end state as `pip install praxis-bob` — it just runs the command on your behalf. You can audit the install behavior by reading the mode's `customInstructions` field.
+
 ### Dev install (if you want to contribute or run the test suite)
 
 ```bash

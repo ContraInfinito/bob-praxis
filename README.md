@@ -1,3 +1,13 @@
+<p align="center">
+  <img src="assets/praxis_wordmark.png" alt="Praxis — Methodology Transferred" width="600">
+</p>
+
+<p align="center">
+  <a href="https://pypi.org/project/praxis-bob/"><img src="https://img.shields.io/pypi/v/praxis-bob.svg?color=F97316" alt="PyPI version"></a>
+  <a href="https://pypi.org/project/praxis-bob/"><img src="https://img.shields.io/pypi/pyversions/praxis-bob.svg?color=F97316" alt="Python versions"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-F97316.svg" alt="License: MIT"></a>
+</p>
+
 # Praxis
 
 **Every time you switch AI coding assistants, you re-teach it your conventions. Praxis stops that.**
@@ -235,6 +245,9 @@ bob-praxis/
 │       ├── bob/                  # AGENTS.md, PRAXIS_CONTRACT.md, custom_modes.yaml, etc.
 │       ├── claude_code/          # CLAUDE.md
 │       └── cursor/               # methodology.mdc, python.mdc
+├── assets/                       # Logo and brand assets
+│   ├── praxis_mark.png           # Square mark (chevrons)
+│   └── praxis_wordmark.png       # Horizontal wordmark
 ├── tests/
 │   ├── test_two_phase_smoke.py   # End-to-end smoke test (7 paths + 2 mutex checks)
 │   ├── sample_python_project/    # Test fixture for analyze mode
@@ -242,6 +255,7 @@ bob-praxis/
 ├── bob_sessions/                 # Exported Bob sessions and demo transcripts
 ├── .bob/
 │   └── custom_modes.yaml         # The Praxis Bob mode definition for this repository
+├── pyproject.toml                # PEP 621 packaging configuration
 ├── requirements.txt              # pyyaml (smoke tests only)
 ├── .gitignore
 ├── LICENSE

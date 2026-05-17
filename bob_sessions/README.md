@@ -1,49 +1,68 @@
 # Bob Sessions
 
-This directory contains exported task session reports and screenshots from the development of Praxis during the IBM watsonx Challenge 2026 hackathon.
+This directory contains the exported IBM Bob task sessions and curated demo transcripts that document how Praxis was built and verified during the **IBM Bob Hackathon 2026** (May 15–17, 2026).
 
-## Purpose
-
-These sessions document the development process, showing:
-- Task breakdowns and execution steps
-- Decision-making rationale
-- Bobcoin (token) consumption per phase
-- Problem-solving approaches
-- Code iterations and refinements
-
-## Contents
-
-Each session export includes:
-- **Markdown files**: Full task session transcripts with tool usage and results
-- **Screenshots**: Visual records of task completion summaries and token consumption
-
-## Session Naming Convention
-
-Files follow the pattern: `phase{N}_{description}.{ext}`
-
-Examples:
-- `phase0_setup.md` - Phase 0 initialization session
-- `phase1_cli_implementation.md` - Phase 1 core CLI development
-- `phase0_completion_summary.png` - Screenshot of Phase 0 token usage
-
-## Usage
-
-These sessions serve as:
-1. **Development log**: Historical record of how Praxis was built
-2. **Learning resource**: Examples of AI-assisted development workflows
-3. **Hackathon documentation**: Evidence of development process for judges
-4. **Debugging reference**: Context for understanding implementation decisions
-
-## Privacy Note
-
-Screenshots and session exports may contain:
-- File paths (sanitized where necessary)
-- Code snippets (all open source)
-- Tool usage patterns
-- Token consumption metrics
-
-No API keys, credentials, or sensitive data are included in these exports.
+These files are submitted as the "exported IBM Bob report" required by the hackathon submission guidelines.
 
 ---
 
-**Last Updated**: Phase 0 - May 15, 2026
+## Contents
+
+### `bob_task_*.md` — IBM Bob task exports (11 files)
+
+Direct exports from Bob IDE's task history (Bob's built-in "Export task as Markdown" feature). Each file is a full transcript of one Bob task that contributed to the project, including the original user prompt, every tool call Bob made, the resulting file changes, the completion summary, and the Bobcoin (token) consumption for that task.
+
+Naming pattern: `bob_task_may-{DD}-2026_{H}-{MM}-{SS}-{am|pm}.md` (preserved exactly as Bob exported them).
+
+#### Index — what each task export demonstrates
+
+| File (timestamp) | Task | What it proves |
+|---|---|---|
+| `bob_task_may-15-2026_5-01-47-pm.md` | **Phase 2 Sub-Task 1**: Planning-Doc Parser | Bob did real implementation work — built the planning-doc parser end-to-end, multi-file edit, with self-reported Bobcoin usage |
+| `bob_task_may-15-2026_9-47-53-pm.md` | `Apply Praxis to ./tests/sample_python_project` | First end-to-end live verification in Bob (analyze mode, bob target) |
+| `bob_task_may-16-2026_11-47-43-am.md` | `Apply Praxis to ./tests/sample_python_project` | Re-run after Phase 4 refactor — verifies reproducibility |
+| `bob_task_may-16-2026_12-15-29-pm.md` | `Apply Praxis to ./tests/sample_python_project` | Live test (bob target) |
+| `bob_task_may-16-2026_12-35-16-pm.md` | `Apply Praxis to ./tests/sample_python_project` | Live test (bob target) |
+| `bob_task_may-16-2026_12-38-30-pm.md` | `Apply Praxis to ./tests/sample_python_project for Claude Code` | Live test (analyze mode, **claude_code** target) — first multi-target run |
+| `bob_task_may-16-2026_1-17-28-pm.md` | `Apply Praxis to ./tests/sample_python_project for Claude Code` | Live test (analyze mode, claude_code target) |
+| `bob_task_may-16-2026_1-55-29-pm.md` | `Apply Praxis to ./tests/sample_python_project for Cursor` | Live test (analyze mode, **cursor** target) — third target validated |
+| `bob_task_may-16-2026_1-59-02-pm.md` | `Apply Praxis to ./tests/sample_planning_doc.md` | Live test (**plan mode**, bob target) — clarifying-question generation working live |
+| `bob_task_may-16-2026_2-02-20-pm.md` | `Apply Praxis to ./tests/sample_planning_doc.md for Claude Code` | Live test (plan mode, claude_code target) |
+| `bob_task_may-16-2026_6-09-39-pm.md` | `Apply Praxis to ./tests/sample_planning_doc.md for Cursor` | Live test (plan mode, cursor target) — closes the 3×2 matrix |
+
+**Coverage story:** the 10 live-verification exports collectively cover the full **{analyze, plan} × {bob, claude_code, cursor}** matrix — every mode/target combination was tested live in Bob, not just in the offline smoke test.
+
+### `demo_*.md` — Curated demo evidence transcripts (8 files)
+
+Hand-selected interactions captured during testing that demonstrate specific Praxis behaviors. Used as evidence in the demo video and submission write-up.
+
+- `demo_with_praxis_design_keyword_claude_code.md` — **Primary demo**: "Design a rate limiter" triggers the six-field structured response in Claude Code, with Praxis methodology citations
+- `demo_durability_design_keyword_claude_code.md` — Same trigger fires even after `CLAUDE.md` is deleted; Praxis is recovered from git history + `praxis_output/`
+- `demo_baseline_design_keyword_claude_code.md` — Same prompt on a clean (no Praxis) baseline project for comparison
+- `demo_plan_mode_bob.md` — Plan-mode test: Praxis bootstraps from a planning document and surfaces 5 clarifying questions that land verbatim in the generated `AGENTS.md`
+- `demo_with_praxis_claude_code.md` and `demo_without_praxis_claude_code.md` — Side-by-side experiment showing the methodology's effect on agent behavior
+- `demo_artifact_generated_CLAUDE.md` and `demo_artifact_generated_CLAUDE_v2_with_triggers.md` — Snapshots of the actual `CLAUDE.md` files Praxis generated during testing
+
+### `PHASE*.md` / `phase0_setup.md` / `phase0_conversation_history.txt` — Early-phase notes (5 files)
+
+Working notes and conversation history from Phases 0–1, kept for development continuity. Less polished than the later Bob task exports.
+
+---
+
+## What's NOT in this directory (deliberate)
+
+- **Screenshots** (`.png`, `.jpg`, `.jpeg`, `.gif`) are excluded by `.gitignore` to keep the repo's size down. The markdown transcripts capture the same information in text form.
+- **API keys, credentials, or any secrets.** Every transcript was reviewed before commit.
+- **Test outputs from `tests/sample_python_project/`** — those land in gitignored paths (`tests/**/.bob/`, `tests/**/praxis_output/`, etc.) and are regenerated by running the smoke test.
+
+---
+
+## How these files were exported
+
+The `bob_task_*.md` files were produced by Bob IDE's built-in task-export feature (Bob Findings → Export task as Markdown). Each export is a self-contained record of one task as it appeared in Bob's task history at export time. Filenames are preserved exactly as Bob assigned them.
+
+The `demo_*.md` files were authored during testing — they are hand-formatted transcripts that capture the exact agent inputs and outputs from specific test runs, with brief framing notes added to explain what each transcript demonstrates.
+
+---
+
+**Last updated:** Phase 5 — May 17, 2026

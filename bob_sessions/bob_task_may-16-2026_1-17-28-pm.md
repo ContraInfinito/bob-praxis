@@ -1,0 +1,484 @@
+**User:**
+
+<task>
+Apply Praxis to ./tests/sample_python_project for Claude Code
+</task>
+<environment_details>
+# VSCode Visible Files
+tests\sample_python_project\CLAUDE.md
+
+# VSCode Open Tabs
+test_watsonx.py,LICENSE,README.md,bob_sessions/README.md,praxis/__init__.py,praxis/methodology.py,praxis/granite.py,requirements.txt,tests/sample_python_project/requirements.txt,tests/sample_python_project/app.py,tests/sample_python_project/test_app.py,BOBCOIN_LOG.md,praxis/generate.py,praxis/templates/AGENTS.md.template,praxis/cli.py,praxis/plan.py,test_plan_temp.md,praxis/detect.py,praxis/__main__.py,.gitignore
+
+# Current Time
+Current time in ISO 8601 UTC format: 2026-05-16T19:16:41.851Z
+User time zone: America/Guatemala, UTC-6:00
+
+# Current Cost
+$0.00
+
+# Review Exclusions
+The following file patterns are excluded from code reviews:
+- .vscode/**
+
+# Current Mode
+<slug>praxis</slug>
+<name>🛠️ Praxis</name>
+
+
+# Current Workspace Directory (d:/Projects/praxis/bob-praxis) Files
+.gitignore
+BOBCOIN_LOG.md
+CHANGELOG.md
+LICENSE
+praxis_mode.md
+README.md
+requirements.txt
+test_watsonx.py
+.bob/
+bob_sessions/
+bob_sessions/demo_artifact_generated_CLAUDE.md
+bob_sessions/demo_with_praxis_claude_code.md
+bob_sessions/demo_without_praxis_claude_code.md
+bob_sessions/phase0_conversation_history.txt
+bob_sessions/phase0_setup.md
+bob_sessions/PHASE0-2.md
+bob_sessions/PHASE0.md
+bob_sessions/PHASE1.md
+bob_sessions/README.md
+praxis/
+praxis/__init__.py
+praxis/__main__.py
+praxis/cli.py
+praxis/detect.py
+praxis/generate.py
+praxis/inference_prompts.py
+praxis/methodology.py
+praxis/templates/
+praxis/templates/bob/
+praxis/templates/bob/AGENTS.md.template
+praxis/templates/bob/bobignore.template
+praxis/templates/bob/custom_modes.yaml.template
+praxis/templates/bob/methodology_skill.md.template
+praxis/templates/bob/PRAXIS_CONTRACT.md.template
+praxis/templates/bob/python_skill.md.template
+praxis/templates/claude_code/
+praxis/templates/claude_code/CLAUDE.md.template
+praxis/templates/cursor/
+praxis/templates/cursor/methodology.mdc.template
+praxis/templates/cursor/python.mdc.template
+tests/
+tests/sample_planning_doc.md
+tests/test_two_phase_smoke.py
+tests/sample_python_project/
+tests/sample_python_project/app.py
+tests/sample_python_project/requirements.txt
+tests/sample_python_project/test_app.py
+You have not created a todo list yet. Create one with `update_todo_list` if your task is complicated or involves multiple steps.
+</environment_details>
+
+---
+
+**Assistant:**
+
+Applying Praxis to `./tests/sample_python_project` with target=`claude-code`...
+
+<execute_command>
+<command>python -m praxis context-prompt analyze ./tests/sample_python_project --target claude-code</command>
+</execute_command>
+
+---
+
+**User:**
+
+[execute_command for 'python -m praxis context-prompt analyze ./tests/sample_python_project --target claude-code'] Result:
+Command executed in terminal  within working directory 'd:/Projects/praxis/bob-praxis'. Exit code: 0
+Output:
+Target: claude-code
+Detecting stack at: D:\Projects\praxis\bob-praxis\tests\sample_python_project
+Detected stack: Python
+Frameworks: Flask, pytest
+{
+  "prompt_for_bob": "You are helping bootstrap configuration for Claude Code on an existing codebase via the Praxis methodology-transfer tool. Read the project context below and return a JSON object with three string fields.\n\nPROJECT CONTEXT:\n- Project name: sample_python_project\n- Stack: Python\n- Detected frameworks: Flask, pytest\n- Detected dependencies: flask, pytest\n- Python files count: 2\n\nNo README available. Describe the project conservatively based only on its name, stack, and frameworks. Do not invent.\n\nREQUIRED OUTPUT — return EXACTLY this JSON shape (no preamble, no code fences, no commentary, no multiple versions):\n{\n  \"intro_prose\": \"<2 short paragraphs, 4-5 sentences total, addressing Bob in second person about working on this project; mention the detected frameworks or dependencies concretely; focus on day-to-day collaboration, not abstract goals; no 'Dear Bob' salutation, no signature>\",\n  \"skill_content\": \"<5-8 bullet points (each starting with - ) covering Python-specific conventions relevant to this dependency set; if pytest is present, include a bullet on test conventions; if Flask or FastAPI is present, include a bullet on web framework patterns; if pandas/numpy is present, include a bullet on data handling; no preamble, no header, no closing>\",\n  \"agents_context\": \"<2-3 factual sentences describing what this project does, written for an AI development partner to read at session start; if you don't know what the project does, say so plainly instead of inventing a purpose>\"\n}\n\nTone rules: plain, direct prose. No corporate language. Do not use phrases like 'embark on', 'forge a partnership', 'shape the future', 'exceed expectations', 'ambitious endeavor', 'cutting-edge', 'leveraging', 'pioneering'. Sound like a competent engineer briefing a coworker, not a CEO opening a keynote.\n\nReturn EXACTLY ONE JSON object. Start with { and end with }.",
+  "partial_context": {
+    "project_name": "sample_python_project",
+    "stack_name": "Python",
+    "frameworks": [
+      "Flask",
+      "pytest"
+    ],
+    "dependencies": [
+      "flask",
+      "pytest"
+    ],
+    "python_files_count": 2,
+    "grounding_context": "",
+    "grounding_source_label": "README",
+    "mode": "analyze",
+    "target": "claude-code"
+  },
+  "meta": {
+    "schema_version": "1.0",
+    "mode": "analyze",
+    "path": "D:\\Projects\\praxis\\bob-praxis\\tests\\sample_python_project",
+    "target": "claude-code"
+  }
+}
+
+<environment_details>
+# VSCode Visible Files
+tests\sample_python_project\CLAUDE.md
+
+# VSCode Open Tabs
+test_watsonx.py,LICENSE,README.md,bob_sessions/README.md,praxis/__init__.py,praxis/methodology.py,praxis/granite.py,requirements.txt,tests/sample_python_project/requirements.txt,tests/sample_python_project/app.py,tests/sample_python_project/test_app.py,BOBCOIN_LOG.md,praxis/generate.py,praxis/templates/AGENTS.md.template,praxis/cli.py,praxis/plan.py,test_plan_temp.md,praxis/detect.py,praxis/__main__.py,.gitignore
+
+# Current Time
+Current time in ISO 8601 UTC format: 2026-05-16T19:16:50.208Z
+User time zone: America/Guatemala, UTC-6:00
+
+# Current Cost
+$0.03
+
+# Review Exclusions
+The following file patterns are excluded from code reviews:
+- .vscode/**
+
+# Current Mode
+<slug>praxis</slug>
+<name>🛠️ Praxis</name>
+You have not created a todo list yet. Create one with `update_todo_list` if your task is complicated or involves multiple steps.
+</environment_details>
+
+---
+
+**Assistant:**
+
+Phase 1 complete. Now generating the inference response and running Phase 2...
+
+<read_file>
+<args>
+  <file>
+    <path>tests/sample_python_project/app.py</path>
+  </file>
+  <file>
+    <path>tests/sample_python_project/test_app.py</path>
+  </file>
+  <file>
+    <path>tests/sample_python_project/requirements.txt</path>
+  </file>
+</args>
+</read_file>
+
+---
+
+**User:**
+
+[read_file for 'tests/sample_python_project/app.py', 'tests/sample_python_project/test_app.py', 'tests/sample_python_project/requirements.txt'] Result:
+<files>
+<file><path>tests/sample_python_project/app.py</path>
+<content lines="1-16">
+ 1 | """Sample Flask application for Praxis stack detection testing."""
+ 2 | 
+ 3 | from flask import Flask
+ 4 | 
+ 5 | app = Flask(__name__)
+ 6 | 
+ 7 | 
+ 8 | @app.route("/")
+ 9 | def hello():
+10 |     return "Hello from sample_python_project!"
+11 | 
+12 | 
+13 | if __name__ == "__main__":
+14 |     app.run(debug=True)
+15 | 
+16 | # Made with Bob
+</content>
+</file>
+<file><path>tests/sample_python_project/test_app.py</path>
+<content lines="1-12">
+ 1 | """Sample pytest test file for Praxis stack detection testing."""
+ 2 | 
+ 3 | from app import app
+ 4 | 
+ 5 | 
+ 6 | def test_hello_route():
+ 7 |     client = app.test_client()
+ 8 |     response = client.get("/")
+ 9 |     assert response.status_code == 200
+10 |     assert b"Hello from sample_python_project" in response.data
+11 | 
+12 | # Made with Bob
+</content>
+</file>
+<file><path>tests/sample_python_project/requirements.txt</path>
+<content lines="1-2">
+1 | flask==3.0.0
+2 | pytest==8.0.0
+</content>
+</file>
+</files>
+<environment_details>
+# VSCode Visible Files
+tests\sample_python_project\CLAUDE.md
+
+# VSCode Open Tabs
+test_watsonx.py,LICENSE,README.md,bob_sessions/README.md,praxis/__init__.py,praxis/methodology.py,praxis/granite.py,requirements.txt,tests/sample_python_project/requirements.txt,tests/sample_python_project/app.py,tests/sample_python_project/test_app.py,BOBCOIN_LOG.md,praxis/generate.py,praxis/templates/AGENTS.md.template,praxis/cli.py,praxis/plan.py,test_plan_temp.md,praxis/detect.py,praxis/__main__.py,.gitignore
+
+# Current Time
+Current time in ISO 8601 UTC format: 2026-05-16T19:16:55.704Z
+User time zone: America/Guatemala, UTC-6:00
+
+# Current Cost
+$0.07
+
+# Review Exclusions
+The following file patterns are excluded from code reviews:
+- .vscode/**
+
+# Current Mode
+<slug>praxis</slug>
+<name>🛠️ Praxis</name>
+You have not created a todo list yet. Create one with `update_todo_list` if your task is complicated or involves multiple steps.
+</environment_details>
+
+---
+
+**Assistant:**
+
+Now I'll construct the Phase 2 context and run generation. Based on the code review, this is a minimal Flask web application with pytest tests.
+
+<execute_command>
+<command>$context = @'
+{
+  "partial_context": {
+    "project_name": "sample_python_project",
+    "stack_name": "Python",
+    "frameworks": ["Flask", "pytest"],
+    "dependencies": ["flask", "pytest"],
+    "python_files_count": 2,
+    "grounding_context": "",
+    "grounding_source_label": "README",
+    "mode": "analyze",
+    "target": "claude-code"
+  },
+  "bob_inference": {
+    "intro_prose": "You're working on sample_python_project, a Flask web application with pytest for testing. The codebase uses Flask 3.0.0 for the web framework and pytest 8.0.0 for the test suite. Your work will involve implementing routes, handling HTTP requests and responses, and maintaining test coverage as features evolve. The project follows standard Flask patterns with a simple application factory and pytest fixtures for testing.",
+    "skill_content": "- Use Flask's application context and request context appropriately; access `request`, `session`, and `g` only within request handlers\n- Follow Flask's blueprint pattern for organizing routes when the application grows beyond a single module\n- Write pytest fixtures in `conftest.py` for shared test setup; use `app.test_client()` for testing Flask routes\n- Pin dependencies with exact versions in requirements.txt (as currently done with `flask==3.0.0`); use virtual environments for isolation\n- Structure Flask projects with `app.py` or `__init__.py` at the root; keep route handlers focused and delegate business logic to separate modules\n- Use Flask's built-in development server (`app.run(debug=True)`) only for local development; deploy with WSGI servers like Gunicorn or uWSGI\n- Test both successful responses and error cases; assert on status codes, response data, and headers as needed",
+    "agents_context": "This project is a Flask web application that serves a simple greeting endpoint at the root route. The codebase includes pytest tests that verify the HTTP response behavior of the application."
+  },
+  "meta": {
+    "schema_version": "1.0",
+    "mode": "analyze",
+    "path": "D:\\Projects\\praxis\\bob-praxis\\tests\\sample_python_project",
+    "target": "claude-code"
+  }
+}
+'@; $tempFile = [System.IO.Path]::Combine([System.IO.Path]::GetTempPath(), "praxis_context_$([DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()).json"); [System.IO.File]::WriteAllText($tempFile, $context, [System.Text.Encoding]::UTF8); python -m praxis generate --context-file $tempFile --output-root ./tests/sample_python_project; Remove-Item $tempFile</command>
+</execute_command>
+
+---
+
+**User:**
+
+[execute_command for '$context = @'
+{
+  "partial_context": {
+    "project_name": "sample_python_project",
+    "stack_name": "Python",
+    "frameworks": ["Flask", "pytest"],
+    "dependencies": ["flask", "pytest"],
+    "python_files_count": 2,
+    "grounding_context": "",
+    "grounding_source_label": "README",
+    "mode": "analyze",
+    "target": "claude-code"
+  },
+  "bob_inference": {
+    "intro_prose": "You're working on sample_python_project, a Flask web application with pytest for testing. The codebase uses Flask 3.0.0 for the web framework and pytest 8.0.0 for the test suite. Your work will involve implementing routes, handling HTTP requests and responses, and maintaining test coverage as features evolve. The project follows standard Flask patterns with a simple application factory and pytest fixtures for testing.",
+    "skill_content": "- Use Flask's application context and request context appropriately; access `request`, `session`, and `g` only within request handlers\n- Follow Flask's blueprint pattern for organizing routes when the application grows beyond a single module\n- Write pytest fixtures in `conftest.py` for shared test setup; use `app.test_client()` for testing Flask routes\n- Pin dependencies with exact versions in requirements.txt (as currently done with `flask==3.0.0`); use virtual environments for isolation\n- Structure Flask projects with `app.py` or `__init__.py` at the root; keep route handlers focused and delegate business logic to separate modules\n- Use Flask's built-in development server (`app.run(debug=True)`) only for local development; deploy with WSGI servers like Gunicorn or uWSGI\n- Test both successful responses and error cases; assert on status codes, response data, and headers as needed",
+    "agents_context": "This project is a Flask web application that serves a simple greeting endpoint at the root route. The codebase includes pytest tests that verify the HTTP response behavior of the application."
+  },
+  "meta": {
+    "schema_version": "1.0",
+    "mode": "analyze",
+    "path": "D:\\Projects\\praxis\\bob-praxis\\tests\\sample_python_project",
+    "target": "claude-code"
+  }
+}
+'@; $tempFile = [System.IO.Path]::Combine([System.IO.Path]::GetTempPath(), "praxis_context_$([DateTimeOffset]::UtcNow.ToUnixTimeMilliseconds()).json"); [System.IO.File]::WriteAllText($tempFile, $context, [System.Text.Encoding]::UTF8); python -m praxis generate --context-file $tempFile --output-root ./tests/sample_python_project; Remove-Item $tempFile'] Result:
+Command executed in terminal  within working directory 'd:/Projects/praxis/bob-praxis'. Exit code: 0
+Output:
+Generating output for target=claude-code in: D:\Projects\praxis\bob-praxis\tests\sample_python_project
+D:\Projects\praxis\bob-praxis\tests\sample_python_project\CLAUDE.md
+
+<environment_details>
+# VSCode Visible Files
+tests\sample_python_project\CLAUDE.md
+
+# VSCode Open Tabs
+test_watsonx.py,LICENSE,README.md,bob_sessions/README.md,praxis/__init__.py,praxis/methodology.py,praxis/granite.py,requirements.txt,tests/sample_python_project/requirements.txt,tests/sample_python_project/app.py,tests/sample_python_project/test_app.py,BOBCOIN_LOG.md,praxis/generate.py,praxis/templates/AGENTS.md.template,praxis/cli.py,praxis/plan.py,test_plan_temp.md,praxis/detect.py,praxis/__main__.py,.gitignore
+
+# Current Time
+Current time in ISO 8601 UTC format: 2026-05-16T19:17:17.672Z
+User time zone: America/Guatemala, UTC-6:00
+
+# Current Cost
+$0.11
+
+# Review Exclusions
+The following file patterns are excluded from code reviews:
+- .vscode/**
+
+# Current Mode
+<slug>praxis</slug>
+<name>🛠️ Praxis</name>
+You have not created a todo list yet. Create one with `update_todo_list` if your task is complicated or involves multiple steps.
+</environment_details>
+
+---
+
+**Assistant:**
+
+<read_file>
+<args>
+  <file>
+    <path>tests/sample_python_project/CLAUDE.md</path>
+  </file>
+</args>
+</read_file>
+
+---
+
+**User:**
+
+[read_file for 'tests/sample_python_project/CLAUDE.md'. Reading multiple files at once is more efficient for the LLM. If other files are relevant to your current task, please read them simultaneously.] Result:
+<files>
+<file><path>tests/sample_python_project/CLAUDE.md</path>
+<content lines="1-74">
+ 1 | # sample_python_project
+ 2 | 
+ 3 | This project is a Flask web application that serves a simple greeting endpoint at the root route. The codebase includes pytest tests that verify the HTTP response behavior of the application.
+ 4 | 
+ 5 | **Stack:** Python
+ 6 | **Frameworks:** Flask, pytest
+ 7 | **Dependencies:** flask, pytest
+ 8 | 
+ 9 | ## How to work on this project
+10 | 
+11 | When working on this codebase, follow these principles. They were generated by Praxis from the developer's chosen methodology — treat them as project conventions, not suggestions.
+12 | 
+13 | 1. **Prompt-first execution** — Rewrite vague user input into structured prompts before acting
+14 | 2. **Proactive issue resolution** — Fix adjacent issues you spot; log what was done
+15 | 3. **Code review by a second agent** — Every change critiqued before presentation
+16 | 4. **Logging discipline** — Every session produces a changelog entry
+17 | 5. **Definitional rigor** — Define every technical term before using it
+18 | 6. **Simplicity bias** — Simplest solution that fully solves the problem
+19 | 7. **Security baseline** — Never plaintext credentials; scan for secrets; honor .bobignore
+20 | 
+21 | ## Trigger Keywords
+22 | 
+23 | When the user's message contains the keyword `design` or `scope` (case-insensitive, anywhere in the message), enter STRICT prompt-first mode. Produce a six-field structured prompt and wait for explicit user approval before any action — even if the request appears clear.
+24 | 
+25 | The six fields, in order:
+26 | 
+27 | 1. **Restated request** — bullet-point reformulation of what you think the user wants
+28 | 2. **Assumptions** — every assumption you would make if you proceeded as-is
+29 | 3. **Scope IN** — what is included in the work
+30 | 4. **Scope OUT** — what is deliberately excluded
+31 | 5. **Proposed approach** — one or two sentences summarizing your implementation strategy
+32 | 6. **Open questions** — anything you need clarified before starting
+33 | 
+34 | Wait for the developer to approve, edit, or reject the structured prompt. Do not write code, edit files, or run commands until they approve.
+35 | 
+36 | Example trigger phrases: "Design a rate limiter", "Scope out the auth system", "Help me design the database schema". Plain questions like "what does this file do?" or "run the tests" do not trigger strict mode.
+37 | 
+38 | ## Conventions
+39 | 
+40 | - Use Flask's application context and request context appropriately; access `request`, `session`, and `g` only within request handlers
+41 | - Follow Flask's blueprint pattern for organizing routes when the application grows beyond a single module
+42 | - Write pytest fixtures in `conftest.py` for shared test setup; use `app.test_client()` for testing Flask routes
+43 | - Pin dependencies with exact versions in requirements.txt (as currently done with `flask==3.0.0`); use virtual environments for isolation
+44 | - Structure Flask projects with `app.py` or `__init__.py` at the root; keep route handlers focused and delegate business logic to separate modules
+45 | - Use Flask's built-in development server (`app.run(debug=True)`) only for local development; deploy with WSGI servers like Gunicorn or uWSGI
+46 | - Test both successful responses and error cases; assert on status codes, response data, and headers as needed
+47 | 
+48 | 
+49 | ### Flask
+50 | 
+51 | - Use blueprints for modular route organization
+52 | - Store configuration in environment variables, not hardcoded
+53 | - Use Flask's `current_app` for accessing app context
+54 | - Test routes using Flask's test client
+55 | 
+56 | 
+57 | ### pytest
+58 | 
+59 | - Use fixtures for test setup and teardown
+60 | - Parametrize tests to cover multiple cases
+61 | - Use descriptive test names: `test_<function>_<scenario>_<expected>`
+62 | - Run tests with: `pytest -v`
+63 | 
+64 | 
+65 | ## What to avoid
+66 | 
+67 | - Don't add credentials, API keys, or tokens to any file. Use environment variables.
+68 | - Don't modify build artifacts, generated files, or anything under `.git/`, `venv/`, `__pycache__/`, or `node_modules/`.
+69 | - Don't introduce dependencies without explaining why and how they fit the project's scope.
+70 | - When in doubt about a design decision, ask before implementing — see the Prompt-first execution principle above.
+71 | 
+72 | ---
+73 | 
+74 | *Generated by Praxis on 2026-05-16. Praxis is a methodology transfer tool for AI-assisted development. See https://github.com/ContraInfinito/bob-praxis for the source.*
+</content>
+</file>
+</files>
+<environment_details>
+# VSCode Visible Files
+tests\sample_python_project\CLAUDE.md
+
+# VSCode Open Tabs
+test_watsonx.py,LICENSE,README.md,bob_sessions/README.md,praxis/__init__.py,praxis/methodology.py,praxis/granite.py,requirements.txt,tests/sample_python_project/requirements.txt,tests/sample_python_project/app.py,tests/sample_python_project/test_app.py,BOBCOIN_LOG.md,praxis/generate.py,praxis/templates/AGENTS.md.template,praxis/cli.py,praxis/plan.py,test_plan_temp.md,praxis/detect.py,praxis/__main__.py,.gitignore
+
+# Current Time
+Current time in ISO 8601 UTC format: 2026-05-16T19:17:23.273Z
+User time zone: America/Guatemala, UTC-6:00
+
+# Current Cost
+$0.15
+
+# Review Exclusions
+The following file patterns are excluded from code reviews:
+- .vscode/**
+
+# Current Mode
+<slug>praxis</slug>
+<name>🛠️ Praxis</name>
+You have not created a todo list yet. Create one with `update_todo_list` if your task is complicated or involves multiple steps.
+</environment_details>
+
+---
+
+**Assistant:**
+
+<attempt_completion>
+<result>
+Praxis applied successfully to [`tests/sample_python_project`](tests/sample_python_project) with target=claude-code.
+
+**Detected:**
+- Stack: Python
+- Frameworks: Flask, pytest
+- Dependencies: flask (3.0.0), pytest (8.0.0)
+- Python files: 2
+
+**Generated:**
+- [`CLAUDE.md`](tests/sample_python_project/CLAUDE.md) — Claude Code configuration file
+
+The CLAUDE.md file will be auto-loaded the next time Claude Code opens this project. It includes:
+- Seven methodology principles (prompt-first execution, proactive issue resolution, code review, logging discipline, definitional rigor, simplicity bias, security baseline)
+- Trigger keywords for strict prompt-first mode (design, scope)
+- Flask and pytest conventions tailored to this project
+- Security and dependency guidelines
+</result>
+</attempt_completion>
+

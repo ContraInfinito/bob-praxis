@@ -1,0 +1,49 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "praxis-bob"
+version = "0.1.0"
+description = "Methodology transfer tool for IBM Bob IDE, Claude Code, and Cursor."
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+authors = [{name = "Mathew Carballo López"}]
+keywords = [
+    "bob-ide",
+    "claude-code",
+    "cursor",
+    "ai-development",
+    "methodology",
+    "code-conventions",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Code Generators",
+    "Operating System :: OS Independent",
+]
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pyyaml>=6.0"]
+
+[project.urls]
+Homepage = "https://github.com/ContraInfinito/bob-praxis"
+Repository = "https://github.com/ContraInfinito/bob-praxis"
+Issues = "https://github.com/ContraInfinito/bob-praxis/issues"
+
+[project.scripts]
+praxis = "praxis.cli:main"
+
+[tool.setuptools]
+packages = ["praxis"]
+
+[tool.setuptools.package-data]
+praxis = ["templates/**/*"]

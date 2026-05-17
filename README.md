@@ -126,32 +126,24 @@ Both phases print machine-parseable output to stdout and human-readable status t
 
 **No external API credentials are required.** Praxis has zero runtime dependencies as of v0.1.0. The host agent supplies the inference; Praxis only writes files.
 
-### Setup
+### Quick install (recommended)
 
-1. **Clone the repository**:
-   ```bash
-   git clone https://github.com/ContraInfinito/bob-praxis.git
-   cd bob-praxis
-   ```
+```bash
+pip install praxis-bob
+```
 
-2. **(Optional) Create and activate a virtual environment**. Praxis itself doesn't need any pip-installed dependencies, so this is only necessary if you plan to run the smoke tests (which need `pyyaml`):
-   ```bash
-   python -m venv venv
+This installs the `praxis` command and the Python module (`python -m praxis`). No external API credentials required; Praxis has zero runtime dependencies.
 
-   # On Windows:
-   venv\Scripts\activate
+### Dev install (if you want to contribute or run the test suite)
 
-   # On macOS/Linux:
-   source venv/bin/activate
+```bash
+git clone https://github.com/ContraInfinito/bob-praxis.git
+cd bob-praxis
+pip install -e ".[dev]"
+python tests/test_two_phase_smoke.py
+```
 
-   pip install -r requirements.txt
-   ```
-
-3. **Run the smoke test** to verify the install:
-   ```bash
-   python tests/test_two_phase_smoke.py
-   ```
-   Expected: all 7 paths and 2 mutex checks pass.
+The `[dev]` extras install `pyyaml`, required only for the smoke test. Expected: all 7 paths and 2 mutex checks pass.
 
 ---
 

@@ -50,3 +50,8 @@ _claude_code_prompt_*.md
 _verify_*.py
 _commitmsg.txt
 _temp_*.json
+
+# Python packaging build artifacts
+dist/
+build/
+*.egg-info/
